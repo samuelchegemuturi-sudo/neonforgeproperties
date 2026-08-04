@@ -652,7 +652,7 @@ export const activateTrialSubscriptionFn = createServerFn({ method: "POST" })
 
     // Check if subscription already exists
     const { data: existingSub } = await supabaseAdmin
-      .from("platform_subscriptions")
+      .from("platform_subscriptions" as any)
       .select("id")
       .eq("company_id", data.company_id)
       .limit(1);
@@ -674,7 +674,7 @@ export const activateTrialSubscriptionFn = createServerFn({ method: "POST" })
 
     // Insert trial
     const { error: subError } = await supabaseAdmin
-      .from("platform_subscriptions")
+      .from("platform_subscriptions" as any)
       .insert({
         company_id: data.company_id,
         status: "trialing",
@@ -708,7 +708,7 @@ export const renewSubscriptionFn = createServerFn({ method: "POST" })
     }
 
     const { data: existingSub } = await supabaseAdmin
-      .from("platform_subscriptions")
+      .from("platform_subscriptions" as any)
       .select("id, current_period_end")
       .eq("company_id", data.company_id)
       .single();
@@ -718,7 +718,8 @@ export const renewSubscriptionFn = createServerFn({ method: "POST" })
     }
 
     // Extend from today if expired, otherwise extend from current end date
-    const currentEnd = new Date(existingSub.current_period_end);
+    const sub = existingSub as any;
+    const currentEnd = new Date(sub.current_period_end);
     const now = new Date();
     const baseDate = currentEnd < now ? now : currentEnd;
     
@@ -726,7 +727,7 @@ export const renewSubscriptionFn = createServerFn({ method: "POST" })
     next30.setDate(next30.getDate() + 30);
 
     const { error: subError } = await supabaseAdmin
-      .from("platform_subscriptions")
+      .from("platform_subscriptions" as any)
       .update({
         status: "active",
         current_period_end: next30.toISOString(),

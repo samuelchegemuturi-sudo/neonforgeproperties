@@ -137,7 +137,7 @@ export function useRecordTransaction() {
             `,
             attachments: [{
               name: "receipt.pdf",
-              content: pdfBase64
+              content: pdfBase64 as string
             }]
           }
         });
