@@ -1,0 +1,1 @@
+UPDATE public.profiles SET is_super_admin = true, updated_at = now() WHERE email = 'admin@neonforgecreation.co';

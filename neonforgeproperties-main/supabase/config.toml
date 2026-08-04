@@ -1,0 +1,33 @@
+project_id = "bgvthpdxicafbruqdhib"
+[functions.paystack_webhook]
+enabled = true
+verify_jwt = false
+import_map = "./functions/paystack_webhook/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/paystack_webhook/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/paystack_webhook/*.html" ]
+
+[functions.send_email]
+enabled = true
+verify_jwt = false
+import_map = "./functions/send_email/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/send_email/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/send_email/*.html" ]
+
+[functions.backup_to_drive]
+enabled = true
+verify_jwt = false
+import_map = "./functions/backup_to_drive/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/backup_to_drive/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/backup_to_drive/*.html" ]
