@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Plus, UserCog, Copy, CheckCircle2, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { companyCreateEmployee, adminResetTemporaryPassword, sendEmailFn, adminDeleteUser } from '@/lib/platform.functions';
+import { companyCreateEmployee, adminCreateOfficer, adminResetTemporaryPassword, sendEmailFn, adminDeleteUser } from '@/lib/platform.functions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -74,11 +74,11 @@ function EmployeesPage() {
     queryKey: ['roles', companyId, isSuper],
     enabled: queryEnabled,
     queryFn: async () => {
-      let query = supabase.from('roles').select('id, name').order('name');
+      let query = supabase.from('roles').select('id, name, slug').order('name');
       if (companyId) {
         query = query.eq('company_id', companyId);
       } else {
-        query = query.is('company_id', null);
+        query = query.is('company_id', null).in('slug', ['platform_verification_officer', 'platform_support_officer']);
       }
       
       const { data, error } = await query;
@@ -125,9 +125,14 @@ function EmployeesPage() {
 
   const sendEmail = useServerFn(sendEmailFn);
   const createFn = useServerFn(companyCreateEmployee);
+  const createOfficerFn = useServerFn(adminCreateOfficer);
   const createEmployee = useMutation({
-    mutationFn: (input: { full_name: string; email: string; position: string; role_id: string }) =>
-      createFn({ data: input }),
+    mutationFn: (input: { full_name: string; email: string; position: string; role_id: string; roleSlug?: string }) => {
+      if (!companyId && isSuper && input.roleSlug) {
+        return createOfficerFn({ data: { email: input.email, full_name: input.full_name, roleSlug: input.roleSlug }});
+      }
+      return createFn({ data: input });
+    },
     onSuccess: async (result, variables) => {
       setCredentials({ email: result.email, temporaryPassword: result.temporaryPassword });
       setOpen(false);
@@ -243,11 +248,13 @@ function EmployeesPage() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   const fd = new FormData(e.currentTarget);
+                  const selectedRole = roles?.find(r => r.id === fd.get("role_id"));
                   createEmployee.mutate({
                     full_name: fd.get("full_name") as string,
                     email: fd.get("email") as string,
                     position: fd.get("position") as string,
                     role_id: fd.get("role_id") as string,
+                    roleSlug: selectedRole?.slug,
                   });
                 }}
                 className="grid gap-4 py-4"
