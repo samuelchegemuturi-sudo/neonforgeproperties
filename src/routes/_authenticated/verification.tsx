@@ -17,12 +17,19 @@ import { useState, useEffect } from "react";
 function SignedUrlLink({ path, label }: { path: string; label: string }) {
   const [url, setUrl] = useState<string>("");
   useEffect(() => {
+    if (!path) return;
+    if (path.startsWith("http")) {
+      setUrl(path);
+      return;
+    }
     supabase.storage.from("kyc_documents").createSignedUrl(path, 3600).then(({ data }) => {
       if (data?.signedUrl) setUrl(data.signedUrl);
+      else setUrl("#error");
     });
   }, [path]);
   
   if (!url) return <span className="text-xs text-muted-foreground animate-pulse">Loading...</span>;
+  if (url === "#error") return <span className="text-xs text-destructive">Failed to load</span>;
   return (
     <a href={url} target="_blank" rel="noreferrer" className="text-primary hover:underline text-xs">
       {label}

@@ -52,7 +52,7 @@ function Onboarding() {
           .select("id, name, kyc_status, activation_status, verification_status, created_at")
           .eq("id", companyId!)
           .maybeSingle(),
-        supabase.from("properties").select("id, name").eq("company_id", companyId!),
+        supabase.from("properties").select("id, name, verification_status").eq("company_id", companyId!),
         supabase.from("unit_types").select("id").eq("company_id", companyId!),
         supabase.from("units").select("id", { count: "exact", head: true }).eq("company_id", companyId!),
         supabase.from("licences").select("code, issued_at, activation_fee").eq("company_id", companyId!).maybeSingle(),
@@ -62,12 +62,16 @@ function Onboarding() {
       const activationFee = settings.find((s) => s.key === "activation_fee")?.value ?? "20";
       const paystackKey = settings.find((s) => s.key === "pg_paystack_public_key")?.value ?? "";
       
+      const propertiesList = properties.data ?? [];
+      const verifiedProperties = propertiesList.filter(p => p.verification_status !== 'pending');
+      
       let isFirstMonth = company.data?.activation_status === "pending_activation";
-      let finalFee = isFirstMonth ? 20 : (properties.data?.length || 0) * 500;
+      let finalFee = isFirstMonth ? 20 : (verifiedProperties.length || 0) * 500;
 
       return {
         company: company.data,
-        properties: properties.data ?? [],
+        properties: propertiesList,
+        verifiedPropertiesCount: verifiedProperties.length,
         unitTypes: unitTypes.data ?? [],
         unitCount: units.count ?? 0,
         licence: licence.data,
@@ -384,7 +388,7 @@ function Onboarding() {
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    Your current renewal fee based on {data.properties.length} properties is {money(data.fee, currency)}.
+                    Your current renewal fee based on {data.verifiedPropertiesCount} verified properties is {money(data.fee, currency)}.
                   </p>
                   <Button
                     disabled={activate.isPending}
