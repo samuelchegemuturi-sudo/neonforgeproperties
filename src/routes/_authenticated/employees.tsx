@@ -91,7 +91,7 @@ function EmployeesPage() {
     queryKey: ['employees', companyId, isSuper],
     enabled: queryEnabled,
     queryFn: async () => {
-      let profilesQuery = supabase.from('profiles').select('id, full_name, email, position, status').order('full_name');
+      let profilesQuery = supabase.from('profiles').select('id, full_name, email, position, status, is_super_admin').order('full_name');
       if (companyId) {
         profilesQuery = profilesQuery.eq('company_id', companyId);
       } else {
@@ -114,10 +114,12 @@ function EmployeesPage() {
 
       const rolesMap = new Map(userRoles.map((ur) => [ur.user_id, (ur.roles as any)?.name]));
 
-      return profiles.map((p) => ({
-        ...p,
-        role_name: rolesMap.get(p.id) || 'No Role',
-      })) as EmployeeRow[];
+      return profiles
+        .filter(p => p.position !== 'Landlord' && p.position !== 'Tenant' && p.is_super_admin !== true)
+        .map((p) => ({
+          ...p,
+          role_name: rolesMap.get(p.id) || 'No Role',
+        })) as EmployeeRow[];
     },
   });
 
