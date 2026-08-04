@@ -8,9 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { ThemePanel } from "@/components/theme-panel";
 import { Switch } from "@/components/ui/switch";
+import { UiCustomizer } from "@/components/ui-customizer";
+import { CompanySettings } from "@/components/company-settings";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -148,6 +149,17 @@ function SettingsPage() {
         </CardHeader>
         <CardContent>
           <ThemePanel />
+          <UiCustomizer />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Company Settings</CardTitle>
+          <CardDescription>Update your company name and logo.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CompanySettings />
         </CardContent>
       </Card>
 

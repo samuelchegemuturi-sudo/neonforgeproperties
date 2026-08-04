@@ -51,25 +51,25 @@ function Landing() {
 
   return (
     <div className="min-h-screen bg-transparent">
-      <header className="sticky top-0 z-30 border-b border-white/20 dark:border-white/10 bg-background/40 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Home className="size-4" />
+      <div className="sticky top-4 z-40 px-4 sm:px-6 mb-4 transition-all duration-300">
+        <header className="mx-auto flex h-16 max-w-6xl items-center justify-between rounded-full border border-border/40 bg-background/60 px-6 shadow-[0_8px_30px_rgb(0,0,0,0.08)] backdrop-blur-2xl saturate-[1.8]">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Home className="size-5" />
             </div>
             <span className="text-lg font-semibold tracking-tight">Neon Forge Properties</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {session ? (
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="rounded-full px-5">
                 <Link to="/dashboard">Open dashboard</Link>
               </Button>
             ) : (
               <>
-                <Button asChild variant="ghost" size="sm">
+                <Button asChild variant="ghost" size="sm" className="rounded-full px-5 hover:bg-muted/60">
                   <Link to="/auth">Sign in</Link>
                 </Button>
-                <Button asChild size="sm">
+                <Button asChild size="sm" className="rounded-full px-5">
                   <Link to="/auth" search={{ mode: "signup" }}>
                     Start Free Trial
                   </Link>
@@ -77,8 +77,8 @@ function Landing() {
               </>
             )}
           </div>
-        </div>
-      </header>
+        </header>
+      </div>
 
       <main>
         <section className="surface-grid border-b border-border">

@@ -13,7 +13,33 @@ import appCss from "../styles.css?url";
 import { ThemeProvider } from "@/lib/theme";
 import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
+import { useState, useEffect } from "react";
+import { useAppStore } from "@/lib/store";
 
+function AppBackground() {
+  const [mounted, setMounted] = useState(false);
+  const { backgroundImage } = useAppStore();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return <div className="fixed inset-0 z-[-2] bg-background" />;
+
+  return (
+    <>
+      {backgroundImage ? (
+        <div 
+          className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat transition-opacity duration-1000"
+          style={{ backgroundImage: `url(${backgroundImage})` }}
+        />
+      ) : (
+        <div className="fixed inset-0 z-[-2] bg-background transition-colors duration-1000" />
+      )}
+      <div className="fixed inset-0 z-[-1] bg-background/20 dark:bg-background/60" />
+    </>
+  );
+}
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -122,6 +148,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
+          <AppBackground />
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
           <Toaster richColors position="top-right" />

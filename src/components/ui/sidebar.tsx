@@ -4,6 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeft } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -170,12 +171,13 @@ const Sidebar = React.forwardRef<
     ref,
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+    const { blurIntensity, glassOpacity } = useAppStore();
 
     if (collapsible === "none") {
       return (
         <div
           className={cn(
-            "flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground backdrop-blur-xl border-r border-white/20 dark:border-white/10",
+            `flex h-full w-(--sidebar-width) flex-col ${glassOpacity} ${blurIntensity} saturate-[1.8] text-sidebar-foreground border-r border-white/20 dark:border-white/10`,
             className,
           )}
           ref={ref}
@@ -246,7 +248,7 @@ const Sidebar = React.forwardRef<
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar backdrop-blur-xl border-r border-white/20 dark:border-white/10 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            className={`flex h-full w-full flex-col ${glassOpacity} ${blurIntensity} saturate-[1.8] group-data-[variant=floating]:rounded-3xl group-data-[variant=floating]:border border-border/30 group-data-[variant=floating]:shadow-2xl overflow-hidden`}
           >
             {children}
           </div>

@@ -57,12 +57,20 @@ export function AppSidebar() {
   });
 
   return (
-    <Sidebar className="print:hidden" collapsible="icon">
-      <SidebarHeader className="border-b border-border/50 px-4 py-3">
+    <Sidebar className="print:hidden my-4 ml-4" variant="floating" collapsible="icon">
+      <SidebarHeader className="border-b border-border/20 px-4 py-3">
         <div className="flex items-center gap-2.5 px-1.5 py-2">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-            <Home className="size-4" />
-          </div>
+          {access?.company?.logo_url ? (
+            <img 
+              src={access.company.logo_url} 
+              alt={access.company.name || "Company Logo"} 
+              className="flex size-8 shrink-0 items-center justify-center rounded-md object-contain"
+            />
+          ) : (
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+              <Home className="size-4" />
+            </div>
+          )}
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold tracking-tight">Neon Forge Properties</p>

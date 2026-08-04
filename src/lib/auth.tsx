@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { Session, User } from "@supabase/supabase-js";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAppStore } from "@/lib/store";
 
 export type Profile = {
   id: string;
@@ -49,7 +50,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function loadAccess(userId: string): Promise<AccessProfile> {
+async function loadAccess(userId: string, impersonatedCompanyId: string | null): Promise<AccessProfile> {
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, company_id, full_name, email, phone, position, avatar_url, is_super_admin, status")
@@ -59,18 +60,23 @@ async function loadAccess(userId: string): Promise<AccessProfile> {
   let company: Company | null = null;
   let subscription: { status: string; current_period_end: string | null } | null = null;
 
-  if (profile?.company_id) {
+  let targetCompanyId = profile?.company_id;
+  if (profile?.is_super_admin && impersonatedCompanyId) {
+    targetCompanyId = impersonatedCompanyId;
+  }
+
+  if (targetCompanyId) {
     const { data } = await supabase
       .from("companies")
-      .select("id, name, currency, country, status, activation_status, verification_status, is_demo, created_at")
-      .eq("id", profile.company_id)
+      .select("id, name, currency, country, status, activation_status, verification_status, is_demo, created_at, logo_url")
+      .eq("id", targetCompanyId)
       .maybeSingle();
     company = data as Company | null;
 
     const { data: subData } = await supabase
       .from("platform_subscriptions" as any)
       .select("status, current_period_end")
-      .eq("company_id", profile.company_id)
+      .eq("company_id", targetCompanyId)
       .maybeSingle();
     subscription = subData as any;
   }
@@ -109,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
+  const { impersonatedCompanyId } = useAppStore();
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
@@ -128,9 +135,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userId = session?.user.id ?? null;
 
   const { data: access, isLoading: accessLoading } = useQuery({
-    queryKey: ["access", userId],
+    queryKey: ["access", userId, impersonatedCompanyId],
     enabled: Boolean(userId),
-    queryFn: () => loadAccess(userId!),
+    queryFn: () => loadAccess(userId!, impersonatedCompanyId),
     staleTime: 60_000,
   });
 
