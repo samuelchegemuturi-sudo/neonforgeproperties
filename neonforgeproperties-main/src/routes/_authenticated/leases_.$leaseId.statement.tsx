@@ -80,7 +80,7 @@ function LeaseStatementPage() {
           </div>
           <div className="text-right">
             <h2 className="text-2xl font-semibold text-muted-foreground">Lease Statement</h2>
-            <p className="font-mono text-sm mt-1">{lease.id.split('-')[0].toUpperCase()}</p>
+            <p className="font-mono text-sm mt-1">{lease?.id?.split('-')[0]?.toUpperCase()}</p>
             <p className="text-sm text-muted-foreground mt-1">Generated {shortDate(new Date().toISOString())}</p>
           </div>
         </div>

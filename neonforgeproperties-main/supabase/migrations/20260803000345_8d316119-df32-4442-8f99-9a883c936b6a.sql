@@ -19,10 +19,12 @@ CREATE TABLE IF NOT EXISTS public.platform_settings (
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.platform_settings TO authenticated;
 GRANT ALL ON public.platform_settings TO service_role;
 ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS platform_settings_read ON public.platform_settings;
 CREATE POLICY platform_settings_read ON public.platform_settings FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS platform_settings_write ON public.platform_settings;
 CREATE POLICY platform_settings_write ON public.platform_settings FOR ALL TO authenticated
   USING (public.is_super_admin(auth.uid())) WITH CHECK (public.is_super_admin(auth.uid()));
-CREATE TRIGGER platform_settings_updated BEFORE UPDATE ON public.platform_settings
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.platform_settings
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 INSERT INTO public.platform_settings (key, value, label, category) VALUES
@@ -50,7 +52,7 @@ ALTER TABLE public.pricing_rules ENABLE ROW LEVEL SECURITY;
 CREATE POLICY pricing_rules_read ON public.pricing_rules FOR SELECT TO authenticated USING (true);
 CREATE POLICY pricing_rules_write ON public.pricing_rules FOR ALL TO authenticated
   USING (public.is_super_admin(auth.uid())) WITH CHECK (public.is_super_admin(auth.uid()));
-CREATE TRIGGER pricing_rules_updated BEFORE UPDATE ON public.pricing_rules
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.pricing_rules
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 INSERT INTO public.pricing_rules (slug, label, bedrooms, price_per_unit, category, is_configurable, sort_order) VALUES
@@ -88,7 +90,7 @@ CREATE POLICY property_owners_read ON public.property_owners FOR SELECT TO authe
 CREATE POLICY property_owners_write ON public.property_owners FOR ALL TO authenticated
   USING ((company_id = public.current_company_id() AND public.has_permission(auth.uid(),'property.edit')) OR public.is_super_admin(auth.uid()))
   WITH CHECK ((company_id = public.current_company_id() AND public.has_permission(auth.uid(),'property.edit')) OR public.is_super_admin(auth.uid()));
-CREATE TRIGGER property_owners_updated BEFORE UPDATE ON public.property_owners
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.property_owners
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TABLE IF NOT EXISTS public.properties (
@@ -128,7 +130,7 @@ CREATE POLICY properties_update ON public.properties FOR UPDATE TO authenticated
      OR public.is_super_admin(auth.uid()));
 CREATE POLICY properties_delete ON public.properties FOR DELETE TO authenticated
   USING ((company_id = public.current_company_id() AND public.has_permission(auth.uid(),'property.delete')) OR public.is_super_admin(auth.uid()));
-CREATE TRIGGER properties_updated BEFORE UPDATE ON public.properties
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.properties
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TABLE IF NOT EXISTS public.unit_types (
@@ -154,7 +156,7 @@ CREATE POLICY unit_types_read ON public.unit_types FOR SELECT TO authenticated
 CREATE POLICY unit_types_write ON public.unit_types FOR ALL TO authenticated
   USING ((company_id = public.current_company_id() AND public.has_permission(auth.uid(),'unit.edit')) OR public.is_super_admin(auth.uid()))
   WITH CHECK ((company_id = public.current_company_id() AND public.has_permission(auth.uid(),'unit.edit')) OR public.is_super_admin(auth.uid()));
-CREATE TRIGGER unit_types_updated BEFORE UPDATE ON public.unit_types
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.unit_types
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TABLE IF NOT EXISTS public.units (
@@ -177,7 +179,7 @@ CREATE POLICY units_read ON public.units FOR SELECT TO authenticated
 CREATE POLICY units_write ON public.units FOR ALL TO authenticated
   USING ((company_id = public.current_company_id() AND public.has_permission(auth.uid(),'unit.edit')) OR public.is_super_admin(auth.uid()))
   WITH CHECK ((company_id = public.current_company_id() AND public.has_permission(auth.uid(),'unit.edit')) OR public.is_super_admin(auth.uid()));
-CREATE TRIGGER units_updated BEFORE UPDATE ON public.units
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.units
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TABLE IF NOT EXISTS public.licences (
@@ -201,7 +203,7 @@ CREATE POLICY licences_insert ON public.licences FOR INSERT TO authenticated
   WITH CHECK (company_id = public.current_company_id() OR public.is_super_admin(auth.uid()));
 CREATE POLICY licences_update ON public.licences FOR UPDATE TO authenticated
   USING (public.is_super_admin(auth.uid())) WITH CHECK (public.is_super_admin(auth.uid()));
-CREATE TRIGGER licences_updated BEFORE UPDATE ON public.licences
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.licences
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TABLE IF NOT EXISTS public.subscription_invoices (
@@ -225,7 +227,7 @@ CREATE POLICY subscription_invoices_read ON public.subscription_invoices FOR SEL
   USING ((company_id = public.current_company_id() AND public.has_permission(auth.uid(),'finance.view')) OR public.is_super_admin(auth.uid()));
 CREATE POLICY subscription_invoices_write ON public.subscription_invoices FOR ALL TO authenticated
   USING (public.is_super_admin(auth.uid())) WITH CHECK (public.is_super_admin(auth.uid()));
-CREATE TRIGGER subscription_invoices_updated BEFORE UPDATE ON public.subscription_invoices
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.subscription_invoices
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TABLE IF NOT EXISTS public.verification_requests (
@@ -257,7 +259,7 @@ CREATE POLICY verification_requests_insert ON public.verification_requests FOR I
 CREATE POLICY verification_requests_update ON public.verification_requests FOR UPDATE TO authenticated
   USING (public.has_permission(auth.uid(),'verification.approve') OR public.is_super_admin(auth.uid()))
   WITH CHECK (public.has_permission(auth.uid(),'verification.approve') OR public.is_super_admin(auth.uid()));
-CREATE TRIGGER verification_requests_updated BEFORE UPDATE ON public.verification_requests
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.verification_requests
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TABLE IF NOT EXISTS public.audit_logs (
@@ -301,7 +303,7 @@ CREATE POLICY support_tickets_insert ON public.support_tickets FOR INSERT TO aut
 CREATE POLICY support_tickets_update ON public.support_tickets FOR UPDATE TO authenticated
   USING (public.has_permission(auth.uid(),'support.reply') OR public.is_super_admin(auth.uid()))
   WITH CHECK (public.has_permission(auth.uid(),'support.reply') OR public.is_super_admin(auth.uid()));
-CREATE TRIGGER support_tickets_updated BEFORE UPDATE ON public.support_tickets
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.support_tickets
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TABLE IF NOT EXISTS public.announcements (
@@ -320,7 +322,7 @@ ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 CREATE POLICY announcements_read ON public.announcements FOR SELECT TO authenticated USING (published OR public.is_super_admin(auth.uid()));
 CREATE POLICY announcements_write ON public.announcements FOR ALL TO authenticated
   USING (public.is_super_admin(auth.uid())) WITH CHECK (public.is_super_admin(auth.uid()));
-CREATE TRIGGER announcements_updated BEFORE UPDATE ON public.announcements
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.announcements
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 INSERT INTO public.permissions (key, module, action, label, sort_order) VALUES
@@ -410,7 +412,7 @@ BEGIN
   RETURN NEW;
 END; $$;
 
-CREATE TRIGGER unit_types_generate AFTER INSERT OR UPDATE OF quantity ON public.unit_types
+DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  AFTER INSERT OR UPDATE OF quantity ON public.unit_types
   FOR EACH ROW EXECUTE FUNCTION public.tg_generate_units();
 
 CREATE OR REPLACE FUNCTION public.calculate_subscription(_company_id uuid, _paid_only boolean DEFAULT false)

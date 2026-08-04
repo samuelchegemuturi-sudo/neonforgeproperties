@@ -75,7 +75,7 @@ function MaintenanceComponent() {
     enabled: queryEnabled,
     queryFn: async () => {
       let query = supabase
-        .from('maintenance_requests')
+        .from('maintenance_requests' as any)
         .select(`
           id, title, status, priority, created_at,
           properties (name),
@@ -98,7 +98,7 @@ function MaintenanceComponent() {
   const createRequest = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error("No company associated.");
-      const { data, error } = await supabase.from('maintenance_requests').insert({
+      const { data, error } = await supabase.from('maintenance_requests' as any).insert({
         company_id: companyId,
         title,
         description,
@@ -148,7 +148,7 @@ function MaintenanceComponent() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string, status: string }) => {
-      const { error } = await supabase.from('maintenance_requests').update({ status }).eq('id', id);
+      const { error } = await supabase.from('maintenance_requests' as any).update({ status }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -157,7 +157,7 @@ function MaintenanceComponent() {
     }
   });
 
-  const filteredRequests = requests?.filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase())) ?? [];
+  const filteredRequests = (requests as any[])?.filter((r: any) => r.title.toLowerCase().includes(searchTerm.toLowerCase())) ?? [];
 
   if (!queryEnabled) {
     return (
@@ -299,35 +299,33 @@ function MaintenanceComponent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredRequests.map((req) => (
+                (filteredRequests as any[]).map((req: any) => (
                   <TableRow key={req.id}>
                     <TableCell className="font-medium">{req.title}</TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span>{(req.properties as any)?.name ?? 'N/A'}</span>
-                        <span className="text-xs text-muted-foreground">{(req.units as any)?.unit_number ? `Unit ${(req.units as any).unit_number}` : ''}</span>
-                      </div>
+                      {req.properties?.name}
+                      {req.units?.unit_number && ` - Unit ${req.units?.unit_number}`}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={req.status === 'resolved' ? 'secondary' : req.status === 'in_progress' ? 'default' : 'outline'}>
-                        {req.status.replace('_', ' ').toUpperCase()}
+                      <Badge variant={req.status === 'completed' ? 'default' : req.status === 'pending' ? 'secondary' : 'default'}>
+                        {req.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={req.priority === 'urgent' || req.priority === 'high' ? 'destructive' : 'secondary'}>
-                        {req.priority.toUpperCase()}
+                      <Badge variant={req.priority === 'high' ? 'destructive' : req.priority === 'medium' ? 'default' : 'secondary'}>
+                        {req.priority}
                       </Badge>
                     </TableCell>
                     <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      {req.status === 'open' && (
-                        <Button variant="outline" size="sm" onClick={() => updateStatus.mutate({ id: req.id, status: 'in_progress' })}>
-                          Start
+                    <TableCell className="text-right">
+                      {req.status !== 'completed' && (
+                        <Button variant="outline" size="sm" onClick={() => updateStatus.mutate({ id: req.id, status: 'completed' })}>
+                          Mark Complete
                         </Button>
                       )}
-                      {req.status !== 'resolved' && (
-                        <Button variant="default" size="sm" onClick={() => updateStatus.mutate({ id: req.id, status: 'resolved' })}>
-                          Resolve
+                      {req.status === 'completed' && (
+                        <Button variant="outline" size="sm" onClick={() => updateStatus.mutate({ id: req.id, status: 'pending' })}>
+                          Reopen
                         </Button>
                       )}
                     </TableCell>

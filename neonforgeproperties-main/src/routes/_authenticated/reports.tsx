@@ -25,7 +25,7 @@ function ReportsComponent() {
     enabled: queryEnabled,
     queryFn: async () => {
       let query = supabase
-        .from('transactions')
+        .from('transactions' as any)
         .select(`
           id, amount, type, status, payment_method, description, transaction_date,
           tenants (
@@ -52,7 +52,7 @@ function ReportsComponent() {
     let total = 0;
     const monthlyData: Record<string, number> = {};
 
-    transactions.forEach(t => {
+    (transactions as any[])?.forEach((t: any) => {
       if (t.status === 'completed' && t.type === 'rent_payment') {
         const amount = Number(t.amount) || 0;
         total += amount;
@@ -116,7 +116,7 @@ function ReportsComponent() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{chartData.length > 0 ? `$${chartData[chartData.length - 1].revenue.toLocaleString()}` : '$0'}</div>
+            <div className="text-2xl font-bold">{chartData.length > 0 ? `$${chartData[chartData.length - 1]!.revenue.toLocaleString()}` : '$0'}</div>
             <p className="text-xs text-muted-foreground">Collected this month</p>
           </CardContent>
         </Card>
@@ -189,14 +189,14 @@ function ReportsComponent() {
               ) : transactions?.length === 0 ? (
                 <div className="text-sm text-center text-muted-foreground py-10">No recent transactions.</div>
               ) : (
-                transactions?.slice(0, 5).map(t => (
+                (transactions as any[])?.slice(0, 5).map((t: any) => (
                   <div key={t.id} className="flex items-center">
                     <div className="space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {(t.tenants as any)?.profiles?.full_name || 'System / Auto'}
+                        {t.tenants?.profiles?.full_name || 'System / Auto'}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {t.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {t.type.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                       </p>
                     </div>
                     <div className="ml-auto font-medium">
@@ -232,21 +232,29 @@ function ReportsComponent() {
                 </TableRow>
               ) : !transactions || transactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">No transactions available.</TableCell>
+                  <TableCell colSpan={6} className="h-24 text-center">No transactions available.</TableCell>
                 </TableRow>
               ) : (
-                transactions.map(t => (
+                (transactions as any[]).map((t: any) => (
                   <TableRow key={t.id}>
-                    <TableCell>{new Date(t.transaction_date).toLocaleDateString()}</TableCell>
-                    <TableCell className="font-medium">{t.description || 'N/A'}</TableCell>
-                    <TableCell>{t.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</TableCell>
+                    <TableCell>{new Date((t as any).transaction_date).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-medium">
+                      {(t as any).type === 'rent_payment' ? (
+                        <div className="flex flex-col">
+                          <span>Rent Payment</span>
+                          <span className="text-xs text-muted-foreground">{(t as any).tenants?.profiles?.full_name}</span>
+                        </div>
+                      ) : (t as any).type}
+                    </TableCell>
+                    <TableCell>{(t as any).type.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</TableCell>
                     <TableCell>
-                      <Badge variant={t.status === 'completed' ? 'default' : t.status === 'failed' ? 'destructive' : 'secondary'}>
-                        {t.status.toUpperCase()}
+                      <Badge variant={(t as any).status === 'completed' ? 'default' : (t as any).status === 'pending' ? 'secondary' : 'destructive'}>
+                        {(t as any).status.toUpperCase()}
                       </Badge>
                     </TableCell>
+                    <TableCell>{(t as any).payment_method || 'N/A'}</TableCell>
                     <TableCell className="text-right font-medium">
-                      ${Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${Number((t as any).amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                   </TableRow>
                 ))

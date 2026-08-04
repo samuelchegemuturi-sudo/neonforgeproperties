@@ -31,3 +31,14 @@ entrypoint = "./functions/backup_to_drive/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/backup_to_drive/*.html" ]
+
+[functions.run_sql]
+enabled = true
+verify_jwt = false
+import_map = "./functions/run_sql/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/run_sql/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/run_sql/*.html" ]

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import PaystackPop from "@paystack/inline-js";
+import { registerCompanyFn, activateTrialSubscriptionFn, renewSubscriptionFn } from "@/lib/platform.functions";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({
@@ -61,20 +62,8 @@ function Onboarding() {
       const activationFee = settings.find((s) => s.key === "activation_fee")?.value ?? "20";
       const paystackKey = settings.find((s) => s.key === "pg_paystack_public_key")?.value ?? "";
       
-      let finalFee = Number(activationFee);
-      let isFirstMonth = true;
-      if (company.data?.created_at) {
-        const daysOld = (new Date().getTime() - new Date(company.data.created_at).getTime()) / (1000 * 60 * 60 * 24);
-        if (daysOld > 30) {
-          isFirstMonth = false;
-          const { data: calculatedFee } = await supabase.rpc("calculate_subscription_amount" as any, { c_id: companyId! });
-          if (calculatedFee !== null && calculatedFee !== undefined) {
-             finalFee = Number(calculatedFee);
-          } else {
-             finalFee = (properties.data?.length || 1) * 500;
-          }
-        }
-      }
+      let isFirstMonth = company.data?.activation_status === "pending_activation";
+      let finalFee = isFirstMonth ? 20 : (properties.data?.length || 0) * 500;
 
       return {
         company: company.data,
@@ -89,11 +78,7 @@ function Onboarding() {
     },
   });
 
-  useEffect(() => {
-    if (data?.company?.activation_status === "active") {
-      navigate({ to: "/dashboard", replace: true });
-    }
-  }, [data?.company?.activation_status, navigate]);
+  // Removed automatic redirect to allow users to renew their subscription from this tab
 
   const saveKyc = useMutation({
     mutationFn: async () => {
@@ -121,10 +106,10 @@ function Onboarding() {
         .update({ 
           kyc_status: "submitted", 
           kyc_details: kyc,
-          kra_pin: kraPin as any,
+          kra_pin: kraPin,
           ...(id_document_url && { id_document_url }),
           ...(profile_picture_url && { profile_picture_url })
-        })
+        } as any)
         .eq("id", companyId!);
       if (error) throw error;
       
@@ -155,18 +140,16 @@ function Onboarding() {
   const activate = useMutation({
     mutationFn: async (reference?: string) => {
       // In a real app, you would verify the reference on the server here.
-      const { data: code, error } = await supabase.rpc("generate_licence", {
-        _company_id: companyId!,
-      });
-      if (error) throw error;
-      
-      // Update activation status to active
-      await supabase.from("companies").update({ activation_status: "active" }).eq("id", companyId!);
-      
-      return code as string;
+      if (data.company?.activation_status === "pending_activation") {
+        await activateTrialSubscriptionFn({ data: { company_id: companyId! } });
+        return "Trial Activated";
+      } else {
+        await renewSubscriptionFn({ data: { company_id: companyId! } });
+        return "Subscription Renewed";
+      }
     },
-    onSuccess: (code) => {
-      toast.success(`Licence issued — ${code}`);
+    onSuccess: (msg) => {
+      toast.success(msg);
       void queryClient.invalidateQueries();
       navigate({ to: "/dashboard", replace: true });
     },
@@ -200,12 +183,53 @@ function Onboarding() {
     });
   };
 
+  const registerCompany = useMutation({
+    mutationFn: async (vars: { company_name: string; phone: string }) => {
+      const res = await registerCompanyFn({
+        data: vars,
+      });
+      return res;
+    },
+    onSuccess: () => {
+      toast.success("Company created successfully!");
+      // Reload page to re-fetch session and access which now has company
+      window.location.reload();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (!companyId) {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-sm mt-12">
         <Card>
-          <CardContent className="py-12 text-center text-sm text-muted-foreground">
-            Your account is not attached to a company, so there is nothing to activate.
+          <CardHeader>
+            <CardTitle>Create your company</CardTitle>
+            <CardDescription>
+              Tell us about your property management company to get started.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const form = new FormData(e.currentTarget);
+              registerCompany.mutate({
+                company_name: String(form.get("company_name")),
+                phone: String(form.get("phone")),
+              });
+            }} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="company_name">Company Name</Label>
+                <Input id="company_name" name="company_name" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input id="phone" name="phone" required />
+              </div>
+              <Button type="submit" className="w-full" disabled={registerCompany.isPending}>
+                {registerCompany.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+                Create Company
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>
@@ -223,168 +247,158 @@ function Onboarding() {
   }
 
   const kycDone = ["submitted", "verified", "approved"].includes(data.company?.kyc_status ?? "");
-  const licenceDone = Boolean(data.licence);
-
-  const steps = [
-    { key: "kyc", title: "Company KYC", done: kycDone },
-    { key: "licence", title: "Activation fee & licence", done: licenceDone },
-  ];
-  const currentIndex = steps.findIndex((s) => !s.done);
-
-  const stateOf = (i: number): StepState =>
-    steps[i]!.done ? "done" : currentIndex === i ? "current" : "locked";
+  const isPendingActivation = data.company?.activation_status === "pending_activation";
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Activate {data.company?.name}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {isPendingActivation ? `Activate ${data.company?.name}` : `Company Settings for ${data.company?.name}`}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Get started with your Neon Forge Properties licence. You can leave and come back — progress is read from
-          your account.
+          {isPendingActivation 
+            ? "Get started with your Neon Forge Properties licence by activating a 30-day trial."
+            : "Manage your company KYC and subscription renewal."}
         </p>
       </div>
 
-      <ol className="grid gap-2 sm:grid-cols-4">
-        {steps.map((s, i) => {
-          const state = stateOf(i);
-          return (
-            <li
-              key={s.key}
-              className={`rounded-lg border p-3 text-xs ${
-                state === "current" ? "border-primary bg-primary/5" : "border-border"
-              }`}
-            >
-              <span className="flex items-center gap-1.5 font-medium">
-                {state === "done" ? (
-                  <Check className="size-3.5 text-primary" />
-                ) : state === "locked" ? (
-                  <Lock className="size-3.5 text-muted-foreground" />
-                ) : (
-                  <span className="size-3.5 rounded-full border-2 border-primary" />
-                )}
-                {s.title}
-              </span>
-              <span className="mt-1 block text-muted-foreground">
-                {state === "done" ? "Complete" : state === "current" ? "In progress" : "Locked"}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">1. Company KYC</CardTitle>
-          <CardDescription>
-            Registration and tax details used on invoices and disbursements.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {kycDone ? (
-            <Badge variant="secondary">Submitted — {data.company?.kyc_status}</Badge>
-          ) : (
-            <form
-              className="grid gap-3 sm:grid-cols-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                saveKyc.mutate();
+      {isPendingActivation ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Start your 30-day trial</CardTitle>
+            <CardDescription>
+              One-time activation fee of {money(20, currency)} for your first 30 days. After 30 days, standard billing applies (KES 500 per property).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Pay securely with Paystack to instantly activate your account and start managing your properties.
+            </p>
+            <Button
+              disabled={activate.isPending}
+              onClick={() => {
+                // Temporary override for fee during trial activation
+                data.fee = 20;
+                payWithPaystack();
               }}
             >
-              <div className="space-y-1.5">
-                <Label htmlFor="reg">Registration no. (Optional)</Label>
-                <Input
-                  id="reg"
-                  value={kyc.registration_no}
-                  onChange={(e) => setKyc({ ...kyc, registration_no: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pin">KRA PIN</Label>
-                <Input
-                  id="pin"
-                  value={kraPin}
-                  onChange={(e) => setKraPin(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="phone">Contact phone</Label>
-                <Input
-                  id="phone"
-                  value={kyc.contact_phone}
-                  onChange={(e) => setKyc({ ...kyc, contact_phone: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-3">
-                <Label htmlFor="idDoc">ID Document (PDF or Image)</Label>
-                <Input
-                  id="idDoc"
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={(e) => setIdFile(e.target.files?.[0] ?? null)}
-                  required
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-3">
-                <Label htmlFor="picFile">Profile Picture / Selfie</Label>
-                <Input
-                  id="picFile"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setPicFile(e.target.files?.[0] ?? null)}
-                  required
-                />
-              </div>
-              <div className="sm:col-span-3">
-                <Button type="submit" disabled={saveKyc.isPending}>
-                  {saveKyc.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-                  Submit KYC Documents
-                </Button>
-              </div>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+              {activate.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+              Pay {money(20, currency)} & Activate Trial
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Company KYC</CardTitle>
+              <CardDescription>
+                Registration and tax details used on invoices and disbursements.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {kycDone ? (
+                <Badge variant="secondary">Submitted — {data.company?.kyc_status}</Badge>
+              ) : (
+                <form
+                  className="grid gap-3 sm:grid-cols-3"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    saveKyc.mutate();
+                  }}
+                >
+                  <div className="space-y-1.5">
+                    <Label htmlFor="reg">Registration no. (Optional)</Label>
+                    <Input
+                      id="reg"
+                      value={kyc.registration_no}
+                      onChange={(e) => setKyc({ ...kyc, registration_no: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="pin">KRA PIN</Label>
+                    <Input
+                      id="pin"
+                      value={kraPin}
+                      onChange={(e) => setKraPin(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="phone">Contact phone</Label>
+                    <Input
+                      id="phone"
+                      value={kyc.contact_phone}
+                      onChange={(e) => setKyc({ ...kyc, contact_phone: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-3">
+                    <Label htmlFor="idDoc">ID Document (PDF or Image)</Label>
+                    <Input
+                      id="idDoc"
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => setIdFile(e.target.files?.[0] ?? null)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-3">
+                    <Label htmlFor="picFile">Profile Picture / Selfie</Label>
+                    <Input
+                      id="picFile"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setPicFile(e.target.files?.[0] ?? null)}
+                      required
+                    />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <Button type="submit" disabled={saveKyc.isPending}>
+                      {saveKyc.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+                      Submit KYC Documents
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">2. Activation fee & licence</CardTitle>
-          <CardDescription>
-            {data.isFirstMonth 
-              ? `One-time activation fee of ${money(data.fee, currency)} for your first 30 days. After 30 days, standard billing applies.` 
-              : `Standard activation fee of ${money(data.fee, currency)} based on your registered properties.`}
-            {" "}Once settled, a permanent licence code is issued and your portfolio goes live.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {licenceDone ? (
-            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 p-3">
-              <KeyRound className="size-4 text-primary" />
-              <span className="font-mono text-sm font-semibold">{data.licence!.code}</span>
-              <span className="text-xs text-muted-foreground">
-                issued {shortDate(data.licence!.issued_at)} ·{" "}
-                {money(data.licence!.activation_fee, currency)}
-              </span>
-            </div>
-          ) : (
-            <>
-              <p className="text-sm text-muted-foreground">
-                {kycDone
-                  ? "Pay securely with Paystack to instantly activate your account and start managing your properties."
-                  : "Finish the KYC step above to unlock activation."}
-              </p>
-              <Button
-                disabled={!kycDone || activate.isPending}
-                onClick={payWithPaystack}
-              >
-                {activate.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-                Pay {money(data.fee, currency)} & Activate
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Subscription & Renewal</CardTitle>
+              <CardDescription>
+                Standard billing of {money(500, currency)} per registered property.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {data.properties.length === 0 ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    You currently have 0 properties registered. Please add a property first to calculate your renewal fee.
+                  </p>
+                  <Button onClick={() => navigate({ to: "/properties" })}>
+                    Add Properties
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Your current renewal fee based on {data.properties.length} properties is {money(data.fee, currency)}.
+                  </p>
+                  <Button
+                    disabled={activate.isPending}
+                    onClick={payWithPaystack}
+                  >
+                    {activate.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+                    Pay {money(data.fee, currency)} to Renew
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

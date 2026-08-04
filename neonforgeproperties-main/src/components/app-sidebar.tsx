@@ -51,6 +51,7 @@ export function AppSidebar() {
     }
 
     if (item.superAdminOnly && !isSuper) return false;
+    if (item.hideFromSuperAdmin && isSuper) return false;
     
     return can(item.permission);
   });
@@ -124,7 +125,7 @@ export function AppSidebar() {
         {!collapsed && (
           <p className="px-2 py-1 text-xs text-muted-foreground">
             {access?.roles.map((r) => r.name).join(", ") ||
-              (access?.profile?.is_super_admin ? "Super Admin" : "No role assigned")}
+              (access?.profile?.is_super_admin ? "Super Admin" : access?.profile?.position === "Landlord" ? "Landlord" : "No role assigned")}
           </p>
         )}
       </SidebarFooter>

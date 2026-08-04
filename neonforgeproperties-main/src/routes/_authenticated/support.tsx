@@ -57,15 +57,15 @@ function SupportComponent() {
   const createTicket = useMutation({
     mutationFn: async () => {
       if (!companyId && !isSuper) throw new Error("No company associated.");
-      const { data, error } = await supabase.from('support_tickets').insert({
+      const { error } = await supabase.from('support_tickets').insert({
         company_id: companyId,
-        subject,
-        body,
-        priority,
-        created_by: access?.profile?.id
+        subject: subject,
+        body: body,
+        priority: priority,
+        created_by: access?.profile?.id ?? null
       });
       if (error) throw error;
-      return data;
+      return { subject, body };
     },
     onSuccess: async () => {
       toast.success("Support ticket created successfully");

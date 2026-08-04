@@ -4,7 +4,7 @@ DECLARE
   landlord_role uuid;
   r record;
   tmpl jsonb := '[
-    {"slug":"landlord","name":"Landlord","desc":"Company owner with full access","prefix":["dashboard","property","unit","tenant","finance","maintenance","employees","roles","listing","reports","settings","audit"]},
+    {"slug":"landlord","name":"Landlord","desc":"Company owner with full access","prefix":["dashboard","property","unit","tenant","finance","maintenance","employees","roles","verification","listing","reports","settings","audit"]},
     {"slug":"property_manager","name":"Property Manager","desc":"Runs day to day operations","prefix":["dashboard","property","unit","tenant","maintenance","listing","reports"]},
     {"slug":"accountant","name":"Accountant","desc":"Finance and reporting","prefix":["dashboard","finance","reports","tenant"]},
     {"slug":"caretaker","name":"Caretaker","desc":"On-site property caretaker","prefix":["dashboard","maintenance","unit"]},

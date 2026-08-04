@@ -48,14 +48,10 @@ export function RouteComponent() {
     const isSuper = access.profile?.is_super_admin;
     const isEmployee = access.profile?.company_id && !access.company;
     const isActive = access.company?.activation_status === "active";
-    const isDemoActive = (access.company as any)?.is_demo && access.company?.created_at && (new Date().getTime() - new Date(access.company.created_at).getTime()) < 24 * 60 * 60 * 1000;
     const isAllowedRoute = ["/onboarding", "/settings", "/auth", "/support"].includes(pathname);
-    const isSuperAdminRoute = ["/licences", "/companies", "/subscriptions", "/pricing", "/verification", "/leads"].includes(pathname);
     
-    if (!isEmployee && !isActive && !isDemoActive && !isAllowedRoute) {
-      if (!(isSuper && isSuperAdminRoute)) {
-        navigate({ to: "/onboarding", replace: true });
-      }
+    if (!isSuper && !isEmployee && !isActive && !isAllowedRoute) {
+      navigate({ to: "/onboarding", replace: true });
     }
 
     if (user?.user_metadata?.['requires_password_change'] && pathname !== "/force-password-change") {
@@ -65,11 +61,11 @@ export function RouteComponent() {
 
   const isSuspended = access?.profile?.status === "suspended" || access?.company?.status === "suspended";
   const isPastDue = access?.subscription?.current_period_end 
-    ? new Date(access.subscription.current_period_end) < new Date() && access.subscription.status !== 'trialing'
+    ? new Date(access.subscription.current_period_end) < new Date()
     : false;
   
   const isSuperAdminRoute = ["/licences", "/companies", "/subscriptions", "/pricing", "/verification", "/leads"].includes(pathname);
-  const isLockedOut = (isPastDue || isSuspended) && !(access?.profile?.is_super_admin && isSuperAdminRoute) && pathname !== "/support";
+  const isLockedOut = (isPastDue || isSuspended) && !(access?.profile?.is_super_admin && isSuperAdminRoute) && !["/support", "/onboarding", "/properties"].includes(pathname);
 
   if (isLockedOut) {
     return (
@@ -86,7 +82,12 @@ export function RouteComponent() {
               ? "Your account or company has been suspended by an administrator. Please contact support."
               : "Your subscription has past its due date. Please renew your subscription to restore access to the platform."}
           </p>
-          <Button onClick={signOut} variant="outline">Sign out</Button>
+          <div className="flex gap-2 justify-center">
+            {isPastDue && !isSuspended && (
+              <Button onClick={() => navigate({ to: "/onboarding" })}>Renew Subscription</Button>
+            )}
+            <Button onClick={signOut} variant="outline">Sign out</Button>
+          </div>
         </div>
       </div>
     );

@@ -70,8 +70,8 @@ function Landing() {
                   <Link to="/auth">Sign in</Link>
                 </Button>
                 <Button asChild size="sm">
-                  <Link to="/request-demo">
-                    Request Demo
+                  <Link to="/auth" search={{ mode: "signup" }}>
+                    Start Free Trial
                   </Link>
                 </Button>
               </>
@@ -95,8 +95,8 @@ function Landing() {
             </p>
             <div className="mt-9 flex flex-wrap justify-center gap-3">
               <Button asChild size="lg">
-                <Link to="/request-demo">
-                  Request Demo <ArrowRight className="size-4" />
+                <Link to="/auth" search={{ mode: "signup" }}>
+                  Start Free Trial <ArrowRight className="size-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">

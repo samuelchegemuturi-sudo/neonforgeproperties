@@ -24,6 +24,8 @@ export type Company = {
   status: string;
   activation_status: string;
   verification_status: string;
+  is_demo: boolean;
+  created_at: string;
 };
 
 export type AccessProfile = {
@@ -66,11 +68,11 @@ async function loadAccess(userId: string): Promise<AccessProfile> {
     company = data as Company | null;
 
     const { data: subData } = await supabase
-      .from("platform_subscriptions")
+      .from("platform_subscriptions" as any)
       .select("status, current_period_end")
       .eq("company_id", profile.company_id)
       .maybeSingle();
-    subscription = subData;
+    subscription = subData as any;
   }
 
   const { data: roleRows } = await supabase
@@ -92,6 +94,12 @@ async function loadAccess(userId: string): Promise<AccessProfile> {
         roles.map((r) => r.id),
       );
     permissions = Array.from(new Set((perms ?? []).map((p) => p.permission_key)));
+  }
+
+  // If the user is the Landlord (primary owner), grant them all permissions implicitly
+  if ((profile as Profile)?.position === "Landlord") {
+    // Alternatively, instead of fetching every permission, we can inject a special wildcard
+    // or just fetch all available permissions from system. But here we can just update the `can` check.
   }
 
   return { profile: (profile as Profile) ?? null, company, roles, permissions, subscription };
@@ -129,7 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => {
     const permissions = access?.permissions ?? [];
     const isSuper = access?.profile?.is_super_admin ?? false;
-    const can = (key: string) => isSuper || permissions.includes(key);
+    const isLandlord = access?.profile?.position === "Landlord";
+    const can = (key: string) => isSuper || isLandlord || permissions.includes(key);
     return {
       session,
       user: session?.user ?? null,

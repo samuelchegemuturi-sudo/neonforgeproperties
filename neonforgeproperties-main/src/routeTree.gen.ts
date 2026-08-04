@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as RequestDemoRouteImport } from './routes/request-demo'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
@@ -25,7 +24,6 @@ import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
 import { Route as AuthenticatedForcePasswordChangeRouteImport } from './routes/_authenticated/force-password-change'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
-import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedLeasesRouteImport } from './routes/_authenticated/leases'
 import { Route as AuthenticatedLicencesRouteImport } from './routes/_authenticated/licences'
 import { Route as AuthenticatedListingsRouteImport } from './routes/_authenticated/listings'
@@ -58,11 +56,6 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RequestDemoRoute = RequestDemoRouteImport.update({
-  id: '/request-demo',
-  path: '/request-demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
@@ -129,11 +122,6 @@ const AuthenticatedIntegrationsRoute =
     path: '/integrations',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
-  id: '/leads',
-  path: '/leads',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedLeasesRoute = AuthenticatedLeasesRouteImport.update({
   id: '/leases',
   path: '/leases',
@@ -238,7 +226,6 @@ const AuthenticatedLeasesLeaseIdStatementRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/request-demo': typeof RequestDemoRoute
   '/activity': typeof AuthenticatedActivityRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/audit': typeof AuthenticatedAuditRoute
@@ -251,7 +238,6 @@ export interface FileRoutesByFullPath {
   '/finance': typeof AuthenticatedFinanceRoute
   '/force-password-change': typeof AuthenticatedForcePasswordChangeRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
-  '/leads': typeof AuthenticatedLeadsRoute
   '/leases': typeof AuthenticatedLeasesRoute
   '/licences': typeof AuthenticatedLicencesRoute
   '/listings': typeof AuthenticatedListingsRoute
@@ -275,7 +261,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/request-demo': typeof RequestDemoRoute
   '/activity': typeof AuthenticatedActivityRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/audit': typeof AuthenticatedAuditRoute
@@ -288,7 +273,6 @@ export interface FileRoutesByTo {
   '/finance': typeof AuthenticatedFinanceRoute
   '/force-password-change': typeof AuthenticatedForcePasswordChangeRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
-  '/leads': typeof AuthenticatedLeadsRoute
   '/leases': typeof AuthenticatedLeasesRoute
   '/licences': typeof AuthenticatedLicencesRoute
   '/listings': typeof AuthenticatedListingsRoute
@@ -314,7 +298,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/request-demo': typeof RequestDemoRoute
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
@@ -327,7 +310,6 @@ export interface FileRoutesById {
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/force-password-change': typeof AuthenticatedForcePasswordChangeRoute
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
-  '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/leases': typeof AuthenticatedLeasesRoute
   '/_authenticated/licences': typeof AuthenticatedLicencesRoute
   '/_authenticated/listings': typeof AuthenticatedListingsRoute
@@ -353,7 +335,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
-    | '/request-demo'
     | '/activity'
     | '/analytics'
     | '/audit'
@@ -366,7 +347,6 @@ export interface FileRouteTypes {
     | '/finance'
     | '/force-password-change'
     | '/integrations'
-    | '/leads'
     | '/leases'
     | '/licences'
     | '/listings'
@@ -390,7 +370,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
-    | '/request-demo'
     | '/activity'
     | '/analytics'
     | '/audit'
@@ -403,7 +382,6 @@ export interface FileRouteTypes {
     | '/finance'
     | '/force-password-change'
     | '/integrations'
-    | '/leads'
     | '/leases'
     | '/licences'
     | '/listings'
@@ -428,7 +406,6 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
-    | '/request-demo'
     | '/_authenticated/activity'
     | '/_authenticated/analytics'
     | '/_authenticated/audit'
@@ -441,7 +418,6 @@ export interface FileRouteTypes {
     | '/_authenticated/finance'
     | '/_authenticated/force-password-change'
     | '/_authenticated/integrations'
-    | '/_authenticated/leads'
     | '/_authenticated/leases'
     | '/_authenticated/licences'
     | '/_authenticated/listings'
@@ -467,7 +443,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
-  RequestDemoRoute: typeof RequestDemoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -491,13 +466,6 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/request-demo': {
-      id: '/request-demo'
-      path: '/request-demo'
-      fullPath: '/request-demo'
-      preLoaderRoute: typeof RequestDemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/activity': {
@@ -582,13 +550,6 @@ declare module '@tanstack/react-router' {
       path: '/integrations'
       fullPath: '/integrations'
       preLoaderRoute: typeof AuthenticatedIntegrationsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/leads': {
-      id: '/_authenticated/leads'
-      path: '/leads'
-      fullPath: '/leads'
-      preLoaderRoute: typeof AuthenticatedLeadsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/leases': {
@@ -740,7 +701,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedForcePasswordChangeRoute: typeof AuthenticatedForcePasswordChangeRoute
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
-  AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
   AuthenticatedLeasesRoute: typeof AuthenticatedLeasesRoute
   AuthenticatedLicencesRoute: typeof AuthenticatedLicencesRoute
   AuthenticatedListingsRoute: typeof AuthenticatedListingsRoute
@@ -775,7 +735,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedForcePasswordChangeRoute: AuthenticatedForcePasswordChangeRoute,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
-  AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
   AuthenticatedLeasesRoute: AuthenticatedLeasesRoute,
   AuthenticatedLicencesRoute: AuthenticatedLicencesRoute,
   AuthenticatedListingsRoute: AuthenticatedListingsRoute,
@@ -805,7 +764,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
-  RequestDemoRoute: RequestDemoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

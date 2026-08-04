@@ -312,6 +312,7 @@ export const adminResetTemporaryPassword = createServerFn({ method: "POST" })
       .from("profiles")
       .select("id")
       .eq("email", data.email)
+      .order("created_at", { ascending: false })
       .limit(1);
       
     if (profileFindError || !profiles || profiles.length === 0) {
@@ -354,7 +355,7 @@ export const adminResetTemporaryPassword = createServerFn({ method: "POST" })
       throw new Error("User not found for that email");
     }
     
-    const targetUserId = profiles[0].id;
+    const targetUserId = profiles[0]!.id;
     const password = tempPassword();
 
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
@@ -420,60 +421,6 @@ export const sendEmailFn = createServerFn({ method: "POST" })
     return { success: true };
   });
 
-/** Submit a demo request */
-export const createDemoRequestFn = createServerFn({ method: "POST" })
-  .inputValidator(
-    (input: { full_name: string; email: string; phone: string; company_name: string; estimated_units: string }) => input
-  )
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: company, error: companyError } = await supabaseAdmin.from("companies").insert({
-      name: data.company_name,
-      email: data.email,
-      phone: data.phone,
-      activation_status: "pending_activation",
-      is_demo: true,
-      kyc_details: {
-        full_name: data.full_name,
-        estimated_units: data.estimated_units,
-      },
-    }).select("id").single();
-    if (companyError) throw new Error(companyError.message);
-
-    const password = tempPassword();
-    const { data: created, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email.trim(),
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: data.full_name, requires_password_change: true },
-    });
-    
-    if (authError) {
-      await supabaseAdmin.from("companies").delete().eq("id", company.id);
-      throw new Error(authError.message);
-    }
-
-    const newUserId = created.user!.id;
-
-    await supabaseAdmin
-      .from("profiles")
-      .update({ company_id: company.id, full_name: data.full_name, position: "Landlord" })
-      .eq("id", newUserId);
-
-    const { data: landlordRole } = await supabaseAdmin.rpc("seed_company_roles", {
-      _company_id: company.id,
-    });
-    
-    await fixCompanyRolePermissions(company.id, supabaseAdmin);
-    
-    if (landlordRole) {
-      await supabaseAdmin
-        .from("user_roles")
-        .insert({ user_id: newUserId, role_id: landlordRole as string, company_id: company.id });
-    }
-
-    return { success: true, password };
-  });
 
 export const adminDeleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -502,8 +449,8 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
       // Check permission
       const { data: hasPerm } = await supabase.rpc("has_permission", {
         _user_id: userId,
-        _permission: "employees.delete"
-      });
+        _key: "employees.delete" as any
+      } as any);
       if (!hasPerm) {
         throw new Error("Forbidden - Missing employees.delete permission");
       }
@@ -553,4 +500,180 @@ export const adminDeleteCompany = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     return true;
+  });
+
+export const registerCompanyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { company_name: string; phone?: string; }) => {
+    if (!input.company_name?.trim()) throw new Error("Company name is required");
+    return input;
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: profile } = await supabaseAdmin.from("profiles").select("company_id, email").eq("id", userId).single();
+    if (profile?.company_id) {
+      throw new Error("You are already associated with a company");
+    }
+
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from("companies")
+      .insert({
+        name: data.company_name.trim(),
+        email: profile?.email || "",
+        phone: data.phone ?? null,
+        company_type: "Property Management",
+        activation_status: "pending_activation",
+      })
+      .select("id, name")
+      .single();
+    if (companyError) throw new Error(companyError.message);
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({ company_id: company.id, position: "Landlord" })
+      .eq("id", userId);
+
+    const { data: landlordRole } = await supabaseAdmin.rpc("seed_company_roles", {
+      _company_id: company.id,
+    });
+    
+    await fixCompanyRolePermissions(company.id, supabaseAdmin);
+    
+    if (landlordRole) {
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
+      await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: userId, role_id: landlordRole as string, company_id: company.id });
+    }
+
+    return { companyId: company.id };
+  });
+
+export const activateTrialSubscriptionFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { company_id: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Verify user belongs to company and has permission
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("company_id", data.company_id)
+      .limit(1);
+    
+    if (!roleData || roleData.length === 0) {
+      throw new Error("Forbidden - Not a member of this company");
+    }
+
+    // Check if subscription already exists
+    const { data: existingSub } = await supabaseAdmin
+      .from("platform_subscriptions")
+      .select("id")
+      .eq("company_id", data.company_id)
+      .limit(1);
+
+    if (existingSub && existingSub.length > 0) {
+      throw new Error("Company already has a subscription");
+    }
+
+    const next30 = new Date();
+    next30.setDate(next30.getDate() + 30);
+
+    // Update company activation status
+    const { error: companyError } = await supabaseAdmin
+      .from("companies")
+      .update({ activation_status: "active" })
+      .eq("id", data.company_id);
+    
+    if (companyError) throw new Error(companyError.message);
+
+    // Insert trial
+    const { error: subError } = await supabaseAdmin
+      .from("platform_subscriptions")
+      .insert({
+        company_id: data.company_id,
+        status: "trialing",
+        billing_cycle: "monthly",
+        current_period_start: new Date().toISOString(),
+        current_period_end: next30.toISOString(),
+      } as any);
+
+    if (subError) throw new Error(subError.message);
+
+    return { success: true };
+  });
+
+export const renewSubscriptionFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { company_id: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Verify user belongs to company and has permission
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("company_id", data.company_id)
+      .limit(1);
+    
+    if (!roleData || roleData.length === 0) {
+      throw new Error("Forbidden - Not a member of this company");
+    }
+
+    const { data: existingSub } = await supabaseAdmin
+      .from("platform_subscriptions")
+      .select("id, current_period_end")
+      .eq("company_id", data.company_id)
+      .single();
+
+    if (!existingSub) {
+      throw new Error("Company has no subscription to renew");
+    }
+
+    // Extend from today if expired, otherwise extend from current end date
+    const currentEnd = new Date(existingSub.current_period_end);
+    const now = new Date();
+    const baseDate = currentEnd < now ? now : currentEnd;
+    
+    const next30 = new Date(baseDate);
+    next30.setDate(next30.getDate() + 30);
+
+    const { error: subError } = await supabaseAdmin
+      .from("platform_subscriptions")
+      .update({
+        status: "active",
+        current_period_end: next30.toISOString(),
+      })
+      .eq("company_id", data.company_id);
+
+    if (subError) throw new Error(subError.message);
+
+    return { success: true };
+  });
+
+export const registerUserFn = createServerFn({ method: "POST" })
+  .inputValidator((input: { email: string; password?: string; full_name: string }) => input)
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // create the user as admin so that email_confirm can be set to true
+    const { data: created, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email.trim(),
+      password: data.password || tempPassword(),
+      email_confirm: true,
+      user_metadata: { full_name: data.full_name },
+    });
+    
+    if (authError) {
+      throw new Error(authError.message);
+    }
+
+    return { success: true, userId: created.user.id };
   });

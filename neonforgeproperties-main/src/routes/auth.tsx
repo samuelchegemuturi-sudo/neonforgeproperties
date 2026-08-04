@@ -4,12 +4,13 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Home, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { registerUserFn } from "@/lib/platform.functions";
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -77,7 +78,8 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const { session, access, accessLoading } = useAuth();
-  const navigate = useNavigate();
+  const { mode = "signin" } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
   const [busy, setBusy] = useState(false);
   const [pendingRole, setPendingRole] = useState<string | null>(null);
 
@@ -101,7 +103,7 @@ function AuthPage() {
       const { data: existingRole, error: existingRoleError } = await supabase
         .from("roles")
         .select("id")
-        .eq("company_id", null)
+        .is("company_id", null)
         .eq("slug", template.slug)
         .maybeSingle();
 
@@ -131,8 +133,8 @@ function AuthPage() {
         if (permissionsError) throw permissionsError;
 
         const keys = (permissions ?? [])
-          .filter((row: { key: string }) => template.prefixes.includes(row.key.split(".")[0]))
-          .map((row: { key: string }) => ({ role_id: roleId, permission_key: row.key }));
+          .filter((row: { key: string }) => template.prefixes.includes(row.key.split(".")[0] as any))
+          .map((row: { key: string }) => ({ role_id: roleId as string, permission_key: row.key }));
 
         if (keys.length) {
           const { error: rolePermError } = await supabase.from("role_permissions").insert(keys);
@@ -177,6 +179,38 @@ function AuthPage() {
     }
     toast.success("Welcome back");
     void navigate({ to: "/dashboard" });
+  }
+
+  async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    setBusy(true);
+    try {
+      const email = String(form.get("email")).trim();
+      const password = String(form.get("password"));
+      const full_name = String(form.get("full_name"));
+      
+      await registerUserFn({
+        data: { email, password, full_name }
+      });
+      
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      
+      toast.success("Account created successfully. Welcome!");
+      void navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleReset() {
@@ -253,32 +287,68 @@ function AuthPage() {
             </Card>
           )}
 
-          <form onSubmit={handleSignIn} className="space-y-4 mt-7">
-            <div className="space-y-1.5">
-              <Label htmlFor="si-email">Email</Label>
-              <Input id="si-email" name="email" type="email" required autoComplete="email" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="si-password">Password</Label>
-              <Input
-                id="si-password"
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={busy}>
-              {busy && <Loader2 className="mr-2 size-4 animate-spin" />} Sign in
-            </Button>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="w-full text-xs text-muted-foreground underline-offset-4 hover:underline mt-2"
-            >
-              Forgot your password?
-            </button>
-          </form>
+          <Tabs value={mode} onValueChange={(v) => navigate({ search: { mode: v as "signin" | "signup" } })} className="mt-7">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="signin">Sign In</TabsTrigger>
+              <TabsTrigger value="signup">Free Trial</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="signin" className="mt-4">
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="si-email">Email</Label>
+                  <Input id="si-email" name="email" type="email" required autoComplete="email" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="si-password">Password</Label>
+                  <Input
+                    id="si-password"
+                    name="password"
+                    type="password"
+                    required
+                    autoComplete="current-password"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={busy}>
+                  {busy && <Loader2 className="mr-2 size-4 animate-spin" />} Sign in
+                </Button>
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="w-full text-xs text-muted-foreground underline-offset-4 hover:underline mt-2"
+                >
+                  Forgot your password?
+                </button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="signup" className="mt-4">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="su-name">Full Name</Label>
+                  <Input id="su-name" name="full_name" type="text" required autoComplete="name" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="su-email">Email</Label>
+                  <Input id="su-email" name="email" type="email" required autoComplete="email" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="su-password">Password</Label>
+                  <Input
+                    id="su-password"
+                    name="password"
+                    type="password"
+                    required
+                    autoComplete="new-password"
+                    minLength={6}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={busy}>
+                  {busy && <Loader2 className="mr-2 size-4 animate-spin" />} Sign Up & Start Trial
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
 
           <p className="mt-8 text-center text-xs text-muted-foreground">
             <Link to="/" className="underline-offset-4 hover:underline">

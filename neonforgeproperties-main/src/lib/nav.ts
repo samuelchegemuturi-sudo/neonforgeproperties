@@ -42,22 +42,22 @@ export type NavItem = {
   soon?: boolean;
   featureFlag?: string;
   superAdminOnly?: boolean;
+  hideFromSuperAdmin?: boolean;
 };
 
 /** The sidebar is generated from this list, filtered by the user's permissions. */
 export const NAV_ITEMS: NavItem[] = [
   // PLATFORM
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, permission: "dashboard.view", group: "Platform", featureFlag: "feature_dashboard" },
-  { label: "Activation", to: "/onboarding", icon: BadgeCheck, permission: "dashboard.view", group: "Platform", featureFlag: "feature_activation" },
-  { label: "Analytics", to: "/analytics", icon: BarChart3, permission: "reports.view", group: "Platform", featureFlag: "feature_analytics" },
-  { label: "Live Activity", to: "/activity", icon: Activity, permission: "system.logs", group: "Platform", featureFlag: "feature_activity" },
+  { label: "Activation", to: "/onboarding", icon: BadgeCheck, permission: "dashboard.view", group: "Platform", featureFlag: "feature_activation", hideFromSuperAdmin: true },
+  { label: "Analytics", to: "/analytics", icon: BarChart3, permission: "reports.view", group: "Platform", superAdminOnly: true, featureFlag: "feature_analytics" },
+  { label: "Live Activity", to: "/activity", icon: Activity, permission: "system.logs", group: "Platform", superAdminOnly: true, featureFlag: "feature_activity" },
 
   // BUSINESS
-  { label: "Companies", to: "/companies", icon: Briefcase, permission: "companies.view", group: "Business", featureFlag: "feature_business" },
-  { label: "Demo Requests", to: "/leads", icon: Contact, permission: "dashboard.view", group: "Business", superAdminOnly: true, featureFlag: "feature_business" },
-  { label: "Subscriptions", to: "/subscriptions", icon: CreditCard, permission: "subscriptions.view", group: "Business", featureFlag: "feature_business" },
-  { label: "Licences", to: "/licences", icon: KeyRound, permission: "licence.view", group: "Business", featureFlag: "feature_business" },
-  { label: "Pricing Rules", to: "/pricing", icon: Tags, permission: "pricing.view", group: "Business", featureFlag: "feature_business" },
+  { label: "Companies", to: "/companies", icon: Briefcase, permission: "companies.view", group: "Business", superAdminOnly: true, featureFlag: "feature_business" },
+  { label: "Subscriptions", to: "/subscriptions", icon: CreditCard, permission: "subscriptions.view", group: "Business", superAdminOnly: true, featureFlag: "feature_business" },
+  { label: "Licences", to: "/licences", icon: KeyRound, permission: "licence.view", group: "Business", superAdminOnly: true, featureFlag: "feature_business" },
+  { label: "Pricing Rules", to: "/pricing", icon: Tags, permission: "pricing.view", group: "Business", superAdminOnly: true, featureFlag: "feature_business" },
 
   // PROPERTY
   { label: "Properties", to: "/properties", icon: Building2, permission: "property.view", group: "Property", featureFlag: "feature_properties" },
@@ -87,8 +87,8 @@ export const NAV_ITEMS: NavItem[] = [
 
   // SYSTEM
   { label: "Settings", to: "/settings", icon: Settings, permission: "settings.view", group: "System" },
-  { label: "Integrations", to: "/integrations", icon: Plug, permission: "system.settings", group: "System", featureFlag: "feature_system" },
-  { label: "Backup & Restore", to: "/backup", icon: DatabaseBackup, permission: "system.settings", group: "System", featureFlag: "feature_system" },
+  { label: "Integrations", to: "/integrations", icon: Plug, permission: "system.settings", group: "System", superAdminOnly: true, featureFlag: "feature_system" },
+  { label: "Backup & Restore", to: "/backup", icon: DatabaseBackup, permission: "system.settings", group: "System", superAdminOnly: true, featureFlag: "feature_system" },
 ];
 
 export const NAV_GROUP_ORDER = [

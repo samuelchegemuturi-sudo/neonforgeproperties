@@ -150,7 +150,7 @@ export function VerificationPage() {
       
       const trialEnd = new Date();
       trialEnd.setDate(trialEnd.getDate() + 30);
-      await supabase.from("platform_subscriptions").insert({
+      await supabase.from("platform_subscriptions" as any).insert({
         company_id: companyId,
         status: "trialing",
         trial_ends_at: trialEnd.toISOString(),
@@ -162,7 +162,7 @@ export function VerificationPage() {
       if (profiles && profiles.length > 0) {
         await sendEmail({
           data: {
-            to: profiles[0].email,
+            to: profiles[0]!.email ?? '',
             subject: 'Account Activated - Welcome to Neon Forge Properties!',
             htmlContent: '<h1>Welcome to Neon Forge Properties!</h1><p>Your account has been manually activated by an administrator. You can now start adding properties and units to your dashboard.</p>'
           }

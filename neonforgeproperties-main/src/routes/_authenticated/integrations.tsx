@@ -76,7 +76,7 @@ function IntegrationsComponent() {
           key: s.key,
           value: s.value,
           // We don't update label/category here, assuming they exist or defaults
-        })),
+        })) as any[],
         { onConflict: 'key' }
       );
       if (error) throw error;
