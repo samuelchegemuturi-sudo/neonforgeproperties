@@ -387,7 +387,7 @@ function UnitTypesDialog({
               <SelectContent>
                 {(rules ?? []).map((r) => (
                   <SelectItem key={r.slug} value={r.slug}>
-                    {r.label} — {money(r.price_per_unit)}/unit
+                    {r.label}
                   </SelectItem>
                 ))}
               </SelectContent>
