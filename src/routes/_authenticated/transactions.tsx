@@ -17,13 +17,6 @@ export const Route = createFileRoute('/_authenticated/transactions')({
 function TransactionsComponent() {
   const { data: transactions = [], isLoading } = useTransactions();
   const recordTransaction = useRecordTransaction();
-  const [search, setSearch] = useState('');
-
-  const filteredTransactions = transactions.filter(t => 
-    t.description?.toLowerCase().includes(search.toLowerCase()) ||
-    t.tenant?.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-    t.property?.name?.toLowerCase().includes(search.toLowerCase())
-  );
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -39,15 +32,6 @@ function TransactionsComponent() {
             <CardDescription>A list of recent payments, refunds, and charges.</CardDescription>
           </div>
           <div className="flex gap-2">
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search transactions..." 
-                className="pl-8"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
             <Dialog>
               <DialogTrigger asChild>
                 <Button>
@@ -122,12 +106,12 @@ function TransactionsComponent() {
                   <tr>
                     <td colSpan={6} className="p-4 text-center text-muted-foreground">Loading transactions...</td>
                   </tr>
-                ) : filteredTransactions.length === 0 ? (
+                ) : transactions.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-4 text-center text-muted-foreground">No transactions found.</td>
                   </tr>
                 ) : (
-                  filteredTransactions.map(tx => (
+                  transactions.map(tx => (
                     <tr key={tx.id} className="hover:bg-muted/30">
                       <td className="p-3 whitespace-nowrap">{format(new Date(tx.transaction_date), 'dd MMM yyyy')}</td>
                       <td className="p-3 capitalize">{tx.type.replace('_', ' ')}</td>
