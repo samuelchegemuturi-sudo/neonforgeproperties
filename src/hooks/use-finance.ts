@@ -5,6 +5,8 @@ import type { Transaction, TenantInvoice, Commission, Disbursement } from "@/typ
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { sendEmailFn } from "@/lib/platform.functions";
+import jsPDF from "jspdf";
+
 export function useTransactions() {
   const { access } = useAuth();
   const companyId = access?.company?.id;
@@ -105,7 +107,22 @@ export function useRecordTransaction() {
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
       void queryClient.invalidateQueries({ queryKey: ["invoices"] });
 
-      if (tenantInfo?.email && data.type === 'payment' && data.status === 'completed') {
+      if (tenantInfo?.email && (data as any).type === 'payment' && (data as any).status === 'completed') {
+        const tx = data as any;
+        const doc = new jsPDF();
+        doc.setFontSize(22);
+        doc.text("Payment Receipt", 20, 20);
+        doc.setFontSize(12);
+        doc.text(`Tenant Name: ${tenantInfo.name}`, 20, 40);
+        doc.text(`Amount Paid: KSH ${tx.amount}`, 20, 50);
+        doc.text(`Transaction Date: ${new Date(tx.transaction_date).toLocaleDateString()}`, 20, 60);
+        doc.text(`Description: ${tx.description || 'Payment'}`, 20, 70);
+        
+        doc.setFontSize(10);
+        doc.text("Thank you for your business!", 20, 90);
+        
+        const pdfBase64 = doc.output("datauristring").split(",")[1];
+
         await sendEmail({
           data: {
             to: tenantInfo.email,
@@ -113,9 +130,15 @@ export function useRecordTransaction() {
             htmlContent: `
               <h1>Payment Receipt</h1>
               <p>Hello ${tenantInfo.name},</p>
-              <p>We have successfully received your payment of <strong>KSH ${data.amount}</strong> on ${new Date(data.transaction_date).toLocaleDateString()}.</p>
+              <p>We have successfully received your payment of <strong>KSH ${tx.amount}</strong> on ${new Date(tx.transaction_date).toLocaleDateString()}.</p>
+              <p>Please find your detailed receipt attached to this email.</p>
+              <br/>
               <p>Thank you for your payment!</p>
-            `
+            `,
+            attachments: [{
+              name: "receipt.pdf",
+              content: pdfBase64
+            }]
           }
         });
       }

@@ -134,7 +134,7 @@ export const adminCreateCompany = createServerFn({ method: "POST" })
   });
 /** Public: Request a password reset link */
 export const requestPasswordReset = createServerFn({ method: "POST" })
-  .inputValidator((input: { email: string }) => {
+  .validator((input: { email: string }) => {
     if (!input.email?.trim()) throw new Error("Email is required");
     return input;
   })
@@ -188,7 +188,7 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
 /** Super Admin / Support: send a password reset link to a user. */
 export const adminResetPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { email: string }) => {
+  .validator((input: { email: string }) => {
     if (!input.email?.trim()) throw new Error("Email is required");
     return input;
   })
@@ -236,7 +236,7 @@ export const adminResetPassword = createServerFn({ method: "POST" })
 /** Super Admin: create a platform-level officer (verification or support). */
 export const adminCreateOfficer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { email: string; full_name: string; roleSlug: string }) => {
+  .validator((input: { email: string; full_name: string; roleSlug: string }) => {
     if (!input.email?.trim()) throw new Error("Email is required");
     if (!["platform_verification_officer", "platform_support_officer"].includes(input.roleSlug)) {
       throw new Error("Unknown platform role");
@@ -282,7 +282,7 @@ export const adminCreateOfficer = createServerFn({ method: "POST" })
 /** Company Admin: create an employee for their own company. */
 export const companyCreateEmployee = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (input: { email: string; full_name: string; position: string; role_id: string }) => {
       if (!input.email?.trim()) throw new Error("Email is required");
       if (!input.full_name?.trim()) throw new Error("Full name is required");
@@ -364,7 +364,7 @@ export const companyCreateEmployee = createServerFn({ method: "POST" })
 /** Super Admin: reset a user's password and return a new temporary password */
 export const adminResetTemporaryPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { email: string }) => {
+  .validator((input: { email: string }) => {
     if (!input.email) throw new Error("Email is required");
     return input;
   })
@@ -444,7 +444,12 @@ export const adminResetTemporaryPassword = createServerFn({ method: "POST" })
   });
 
 export const sendEmailFn = createServerFn({ method: "POST" })
-  .inputValidator((input: { to: string; subject: string; htmlContent: string }) => {
+  .validator((input: { 
+    to: string; 
+    subject: string; 
+    htmlContent: string;
+    attachments?: Array<{ name: string; content: string }>;
+  }) => {
     if (!input.to || !input.subject || !input.htmlContent) throw new Error("Missing fields");
     return input;
   })
@@ -479,6 +484,7 @@ export const sendEmailFn = createServerFn({ method: "POST" })
           to: [{ email: data.to }],
           subject: data.subject,
           htmlContent: data.htmlContent,
+          ...(data.attachments && data.attachments.length > 0 ? { attachment: data.attachments } : {})
         }),
       });
 
@@ -498,7 +504,7 @@ export const sendEmailFn = createServerFn({ method: "POST" })
 
 export const adminDeleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { targetUserId: string }) => input)
+  .validator((input: { targetUserId: string }) => input)
   .handler(async ({ data: { targetUserId }, context }) => {
     const { supabase, userId } = context;
     // Ensure caller is Super Admin OR they belong to the same company and have employees.delete permission
@@ -540,7 +546,7 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
 
 export const adminDeleteCompany = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { targetCompanyId: string }) => input)
+  .validator((input: { targetCompanyId: string }) => input)
   .handler(async ({ data: { targetCompanyId }, context }) => {
     const { supabase, userId } = context;
     // Only Super Admins can delete companies
@@ -578,7 +584,7 @@ export const adminDeleteCompany = createServerFn({ method: "POST" })
 
 export const registerCompanyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { company_name: string; phone?: string; }) => {
+  .validator((input: { company_name: string; phone?: string; }) => {
     if (!input.company_name?.trim()) throw new Error("Company name is required");
     return input;
   })
@@ -627,7 +633,7 @@ export const registerCompanyFn = createServerFn({ method: "POST" })
 
 export const activateTrialSubscriptionFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { company_id: string }) => input)
+  .validator((input: { company_id: string }) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -684,7 +690,7 @@ export const activateTrialSubscriptionFn = createServerFn({ method: "POST" })
 
 export const renewSubscriptionFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { company_id: string }) => input)
+  .validator((input: { company_id: string }) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -733,7 +739,7 @@ export const renewSubscriptionFn = createServerFn({ method: "POST" })
   });
 
 export const registerUserFn = createServerFn({ method: "POST" })
-  .inputValidator((input: { email: string; password?: string; full_name: string }) => input)
+  .validator((input: { email: string; password?: string; full_name: string }) => input)
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
