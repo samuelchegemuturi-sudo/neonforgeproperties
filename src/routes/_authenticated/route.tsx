@@ -95,10 +95,10 @@ export function RouteComponent() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="flex min-h-screen w-full bg-transparent">
         <AppSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/90 px-3 backdrop-blur print:hidden">
+          <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-white/20 dark:border-white/10 bg-background/40 px-3 backdrop-blur-xl print:hidden">
             <SidebarTrigger />
             <div className="relative hidden max-w-sm flex-1 sm:block">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

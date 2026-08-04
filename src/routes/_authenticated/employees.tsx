@@ -132,19 +132,28 @@ function EmployeesPage() {
       void queryClient.invalidateQueries({ queryKey: ['employees', companyId, isSuper] });
       toast.success("Employee created successfully");
 
-      await sendEmail({
-        data: {
-          to: result.email,
-          subject: 'Welcome to Neon Forge Properties - Your Employee Account',
-          htmlContent: `
-            <h1>Welcome to Neon Forge Properties!</h1>
-            <p>Hello ${variables.full_name},</p>
-            <p>You have been added as an employee. You can log in using this email address and the following temporary password:</p>
-            <p><strong>${result.temporaryPassword}</strong></p>
-            <p>Please log in and change your password immediately.</p>
-          `
+      try {
+        const emailRes = await sendEmail({
+          data: {
+            to: result.email,
+            subject: 'Welcome to Neon Forge Properties - Your Employee Account',
+            htmlContent: `
+              <h1>Welcome to Neon Forge Properties!</h1>
+              <p>Hello ${variables.full_name},</p>
+              <p>You have been added as an employee. You can log in using this email address and the following temporary password:</p>
+              <p><strong>${result.temporaryPassword}</strong></p>
+              <p>Please log in and change your password immediately.</p>
+            `
+          }
+        });
+        if (emailRes.success) {
+          toast.success("Welcome email sent to " + result.email);
+        } else {
+          toast.error("Welcome email failed: " + emailRes.error);
         }
-      });
+      } catch (err: any) {
+        toast.error("Welcome email fetch failed: " + err.message);
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -152,9 +161,30 @@ function EmployeesPage() {
   const resetPasswordFn = useServerFn(adminResetTemporaryPassword);
   const resetPassword = useMutation({
     mutationFn: (email: string) => resetPasswordFn({ data: { email } }),
-    onSuccess: (result, email) => {
+    onSuccess: async (result, email) => {
       setCredentials({ email, temporaryPassword: result.temporaryPassword });
       toast.success("Temporary password generated");
+      
+      try {
+        const emailRes = await sendEmail({
+          data: {
+            to: email,
+            subject: 'Your Password Has Been Reset',
+            htmlContent: `
+              <h1>Password Reset</h1>
+              <p>Your temporary password is: <strong>${result.temporaryPassword}</strong></p>
+              <p>Please log in and change your password immediately.</p>
+            `
+          }
+        });
+        if (emailRes.success) {
+          toast.success("Email sent to " + email);
+        } else {
+          toast.error("Email failed: " + emailRes.error);
+        }
+      } catch (err: any) {
+        toast.error("Email fetch failed: " + err.message);
+      }
     },
     onError: (error: Error) => toast.error(error.message),
   });

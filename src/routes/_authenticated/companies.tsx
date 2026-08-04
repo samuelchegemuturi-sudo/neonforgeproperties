@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { CheckCircle2, FileKey, ShieldAlert, XCircle, Search, Download, Users, KeyRound, Building2, Server, Trash2, Copy, Plus, ShieldCheck, Ban } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { adminCreateCompany, adminResetTemporaryPassword, adminDeleteCompany } from "@/lib/platform.functions";
+import { adminCreateCompany, adminResetTemporaryPassword, adminDeleteCompany, sendEmailFn } from "@/lib/platform.functions";
 import { COMPANY_TYPES, companyTypeLabel, shortDate, statusTone, titleCase } from "@/lib/platform";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +66,7 @@ type CompanyRow = {
 function CompaniesPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
+  const sendEmail = useServerFn(sendEmailFn);
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -97,11 +98,34 @@ function CompaniesPage() {
       phone: string;
       owner_name: string;
     }) => createFn({ data: input }),
-    onSuccess: (result) => {
+    onSuccess: async (result, variables) => {
       setCredentials({ email: result.email, temporaryPassword: result.temporaryPassword });
       setOpen(false);
       void queryClient.invalidateQueries({ queryKey: ["companies"] });
       toast.success("Company registered");
+      
+      try {
+        const emailRes = await sendEmail({
+          data: {
+            to: result.email,
+            subject: 'Welcome to Neon Forge Properties - Company Admin Account',
+            htmlContent: `
+              <h1>Welcome to Neon Forge Properties!</h1>
+              <p>Hello ${variables.owner_name},</p>
+              <p>Your company <strong>${variables.name}</strong> has been registered. You can log in as the owner using this email address and the following temporary password:</p>
+              <p><strong>${result.temporaryPassword}</strong></p>
+              <p>Please log in and change your password immediately.</p>
+            `
+          }
+        });
+        if (emailRes.success) {
+          toast.success("Welcome email sent to " + result.email);
+        } else {
+          toast.error("Welcome email failed: " + emailRes.error);
+        }
+      } catch (err: any) {
+        toast.error("Welcome email fetch failed: " + err.message);
+      }
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -134,9 +158,30 @@ function CompaniesPage() {
   const resetPasswordFn = useServerFn(adminResetTemporaryPassword);
   const resetPassword = useMutation({
     mutationFn: (email: string) => resetPasswordFn({ data: { email } }),
-    onSuccess: (result, email) => {
+    onSuccess: async (result, email) => {
       setCredentials({ email, temporaryPassword: result.temporaryPassword });
       toast.success("Temporary password generated");
+      
+      try {
+        const emailRes = await sendEmail({
+          data: {
+            to: email,
+            subject: 'Your Password Has Been Reset',
+            htmlContent: `
+              <h1>Password Reset</h1>
+              <p>Your temporary password is: <strong>${result.temporaryPassword}</strong></p>
+              <p>Please log in and change your password immediately.</p>
+            `
+          }
+        });
+        if (emailRes.success) {
+          toast.success("Email sent to " + email);
+        } else {
+          toast.error("Email failed: " + emailRes.error);
+        }
+      } catch (err: any) {
+        toast.error("Email fetch failed: " + err.message);
+      }
     },
     onError: (error: Error) => toast.error(error.message),
   });

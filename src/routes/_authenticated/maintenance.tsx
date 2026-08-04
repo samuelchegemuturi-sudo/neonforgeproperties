@@ -79,7 +79,8 @@ function MaintenanceComponent() {
         .select(`
           id, title, status, priority, created_at,
           properties (name),
-          units (unit_number)
+          units (unit_number),
+          reported_by (email, full_name)
         `)
         .order('created_at', { ascending: false });
       
@@ -147,13 +148,29 @@ function MaintenanceComponent() {
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string, status: string }) => {
+    mutationFn: async ({ id, status, reqInfo }: { id: string, status: string, reqInfo?: any }) => {
       const { error } = await supabase.from('maintenance_requests' as any).update({ status }).eq('id', id);
       if (error) throw error;
+      return { id, status, reqInfo };
     },
-    onSuccess: () => {
+    onSuccess: async ({ status, reqInfo }) => {
       toast.success("Status updated");
       void queryClient.invalidateQueries({ queryKey: ['maintenance_requests'] });
+      
+      if (status === 'completed' && reqInfo?.reported_by?.email) {
+        await sendEmail({
+          data: {
+            to: reqInfo.reported_by.email,
+            subject: `Maintenance Request Resolved: ${reqInfo.title}`,
+            htmlContent: `
+              <h1>Issue Resolved</h1>
+              <p>Hello ${reqInfo.reported_by.full_name},</p>
+              <p>Your maintenance request <strong>"${reqInfo.title}"</strong> has been marked as <strong>Resolved</strong>.</p>
+              <p>If you have any further issues, please don't hesitate to reach out.</p>
+            `
+          }
+        });
+      }
     }
   });
 
@@ -319,12 +336,12 @@ function MaintenanceComponent() {
                     <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       {req.status !== 'completed' && (
-                        <Button variant="outline" size="sm" onClick={() => updateStatus.mutate({ id: req.id, status: 'completed' })}>
+                        <Button variant="outline" size="sm" onClick={() => updateStatus.mutate({ id: req.id, status: 'completed', reqInfo: req })}>
                           Mark Complete
                         </Button>
                       )}
                       {req.status === 'completed' && (
-                        <Button variant="outline" size="sm" onClick={() => updateStatus.mutate({ id: req.id, status: 'pending' })}>
+                        <Button variant="outline" size="sm" onClick={() => updateStatus.mutate({ id: req.id, status: 'pending', reqInfo: req })}>
                           Reopen
                         </Button>
                       )}

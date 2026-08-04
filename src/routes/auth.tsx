@@ -312,13 +312,12 @@ function AuthPage() {
                 <Button type="submit" className="w-full" disabled={busy}>
                   {busy && <Loader2 className="mr-2 size-4 animate-spin" />} Sign in
                 </Button>
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="w-full text-xs text-muted-foreground underline-offset-4 hover:underline mt-2"
+                <Link
+                  to="/forgot-password"
+                  className="w-full text-center text-xs text-muted-foreground underline-offset-4 hover:underline mt-2 block"
                 >
                   Forgot your password?
-                </button>
+                </Link>
               </form>
             </TabsContent>
 

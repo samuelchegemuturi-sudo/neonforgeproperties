@@ -50,8 +50,8 @@ function Landing() {
   const { session } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur">
+    <div className="min-h-screen bg-transparent">
+      <header className="sticky top-0 z-30 border-b border-white/20 dark:border-white/10 bg-background/40 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <div className="flex items-center gap-2.5">
             <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -111,7 +111,7 @@ function Landing() {
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-card)]"
+                className="rounded-xl border border-white/40 dark:border-white/10 bg-card/40 dark:bg-card/40 backdrop-blur-xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
               >
                 <div className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
                   <f.icon className="size-5" />

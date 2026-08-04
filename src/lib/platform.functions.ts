@@ -132,6 +132,58 @@ export const adminCreateCompany = createServerFn({ method: "POST" })
 
     return { companyId: company.id, email: data.email.trim(), temporaryPassword: password };
   });
+/** Public: Request a password reset link */
+export const requestPasswordReset = createServerFn({ method: "POST" })
+  .inputValidator((input: { email: string }) => {
+    if (!input.email?.trim()) throw new Error("Email is required");
+    return input;
+  })
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: linkData, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: "recovery",
+      email: data.email.trim(),
+    });
+    if (error) {
+      console.error("Generate link error:", error.message);
+      // Fail silently to prevent user enumeration
+      return { success: true };
+    }
+
+    if (linkData?.properties?.action_link) {
+      // Get Brevo API Key
+      const { data: settings } = await supabaseAdmin.from("platform_settings").select("value").eq("key", "brevo_api_key").single();
+      const brevoApiKey = settings?.value;
+      
+      if (brevoApiKey && brevoApiKey !== '""') {
+        try {
+          await fetch("https://api.brevo.com/v3/smtp/email", {
+            method: "POST",
+            headers: {
+              "accept": "application/json",
+              "api-key": String(brevoApiKey),
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              sender: { name: "Neon Forge Properties", email: "admin@neonforgecreation.co.ke" },
+              to: [{ email: data.email.trim() }],
+              subject: "Password Reset Request",
+              htmlContent: `
+                <h1>Password Reset</h1>
+                <p>You requested a password reset. Click the link below to set a new password:</p>
+                <p><a href="${linkData.properties.action_link}">Reset Password</a></p>
+                <p>If you didn't request this, you can safely ignore this email.</p>
+              `,
+            }),
+          });
+        } catch (e) {
+          console.error("Failed to send reset email:", e);
+        }
+      }
+    }
+    
+    return { success: true };
+  });
 
 /** Super Admin / Support: send a password reset link to a user. */
 export const adminResetPassword = createServerFn({ method: "POST" })
@@ -149,11 +201,27 @@ export const adminResetPassword = createServerFn({ method: "POST" })
     if (!allowed) throw new Error("Forbidden");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.auth.admin.generateLink({
+    const { data: linkData, error } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email: data.email.trim(),
     });
     if (error) throw new Error(error.message);
+
+    if (linkData?.properties?.action_link) {
+      const { data: settings } = await supabaseAdmin.from("platform_settings").select("value").eq("key", "brevo_api_key").single();
+      if (settings?.value && settings.value !== '""') {
+        await fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST",
+          headers: { "accept": "application/json", "api-key": String(settings.value), "content-type": "application/json" },
+          body: JSON.stringify({
+            sender: { name: "Neon Forge Properties", email: "admin@neonforgecreation.co.ke" },
+            to: [{ email: data.email.trim() }],
+            subject: "Password Reset Required",
+            htmlContent: `<p>An admin has requested a password reset for your account. Click <a href="${linkData.properties.action_link}">here</a> to reset it.</p>`,
+          }),
+        }).catch(e => console.error("Brevo Error:", e));
+      }
+    }
 
     await supabaseAdmin.from("audit_logs").insert({
       actor_id: userId,
@@ -381,44 +449,50 @@ export const sendEmailFn = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Get Brevo API Key
-    const { data: settings, error: settingsError } = await supabaseAdmin
-      .from("platform_settings")
-      .select("value")
-      .eq("key", "brevo_api_key")
-      .single();
+      // Get Brevo API Key
+      const { data: settings, error: settingsError } = await supabaseAdmin
+        .from("platform_settings")
+        .select("value")
+        .eq("key", "brevo_api_key")
+        .single();
 
-    if (settingsError || !settings || !settings.value) {
-      throw new Error("Brevo API key not configured");
+      if (settingsError || !settings || !settings.value || settings.value === '""') {
+        console.error("sendEmailFn Error: Brevo API key not configured in platform_settings.");
+        return { success: false, error: "Brevo API key not configured" };
+      }
+
+      const brevoApiKey = String(settings.value);
+
+      // Call Brevo API
+      const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          "api-key": brevoApiKey,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          sender: { name: "Neon Forge Properties", email: "admin@neonforgecreation.co.ke" },
+          to: [{ email: data.to }],
+          subject: data.subject,
+          htmlContent: data.htmlContent,
+        }),
+      });
+
+      if (!brevoResponse.ok) {
+        const errData = await brevoResponse.json();
+        console.error("Brevo API Error:", errData);
+        return { success: false, error: "Failed to send email via Brevo" };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("sendEmailFn unexpected error:", error);
+      return { success: false, error: String(error) };
     }
-
-    const brevoApiKey = String(settings.value);
-
-    // Call Brevo API
-    const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "accept": "application/json",
-        "api-key": brevoApiKey,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        sender: { name: "Makao Admin", email: "noreply@makao.com" },
-        to: [{ email: data.to }],
-        subject: data.subject,
-        htmlContent: data.htmlContent,
-      }),
-    });
-
-    if (!brevoResponse.ok) {
-      const errData = await brevoResponse.json();
-      console.error("Brevo API Error:", errData);
-      throw new Error("Failed to send email via Brevo");
-    }
-
-    return { success: true };
   });
 
 
