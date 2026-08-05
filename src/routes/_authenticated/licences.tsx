@@ -63,8 +63,8 @@ function LicencesPage() {
         .select("id, name, activation_status, licences(id)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data as unknown as { id: string; name: string; licences: { id: string }[] }[]).filter(
-        (c) => c.licences.length === 0,
+      return (data as unknown as { id: string; name: string; licences: any }[]).filter(
+        (c) => !c.licences || (Array.isArray(c.licences) ? c.licences.length === 0 : false),
       );
     },
   });

@@ -27,6 +27,8 @@ export type Company = {
   verification_status: string;
   is_demo: boolean;
   created_at: string;
+  company_type?: string;
+  logo_url?: string | null;
 };
 
 export type AccessProfile = {
@@ -61,14 +63,16 @@ async function loadAccess(userId: string, impersonatedCompanyId: string | null):
   let subscription: { status: string; current_period_end: string | null } | null = null;
 
   let targetCompanyId = profile?.company_id;
-  if (profile?.is_super_admin && impersonatedCompanyId) {
-    targetCompanyId = impersonatedCompanyId;
+  
+  if (profile?.is_super_admin) {
+    // Super admins are strictly platform admins unless impersonating
+    targetCompanyId = impersonatedCompanyId || null;
   }
 
   if (targetCompanyId) {
     const { data } = await supabase
       .from("companies")
-      .select("id, name, currency, country, status, activation_status, verification_status, is_demo, created_at, logo_url")
+      .select("id, name, currency, country, status, activation_status, verification_status, is_demo, created_at, logo_url, company_type")
       .eq("id", targetCompanyId)
       .maybeSingle();
     company = data as Company | null;

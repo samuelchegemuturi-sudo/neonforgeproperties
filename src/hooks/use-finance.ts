@@ -10,23 +10,32 @@ import jsPDF from "jspdf";
 export function useTransactions() {
   const { access } = useAuth();
   const companyId = access?.company?.id;
+  const isClient = access?.roles?.some(r => r.slug === 'client_landlord');
+  const ownerId = access?.profile?.id;
 
   return useQuery({
-    queryKey: ["transactions", companyId],
+    queryKey: ["transactions", companyId, isClient ? ownerId : 'all'],
     queryFn: async () => {
       if (!companyId) return [];
-      const { data, error } = await supabase
+      let q = supabase
         .from("transactions" as any)
         .select(`
           *,
-          tenant:tenants(id, full_name, email),
-          property:properties(id, name)
+          leases!inner(
+            units!inner(
+              properties!inner(id, name, owner_id)
+            )
+          )
         `)
-        .eq("company_id", companyId)
-        .order("transaction_date", { ascending: false });
+        .eq("company_id", companyId);
+      
+      if (isClient && ownerId) {
+        q = q.eq("leases.units.properties.owner_id", ownerId);
+      }
 
+      const { data, error } = await q.order("transaction_date", { ascending: false });
       if (error) throw error;
-      return data as any[]; // casting to any to handle joined data for now
+      return data as any[];
     },
     enabled: !!companyId,
   });
@@ -35,23 +44,11 @@ export function useTransactions() {
 export function useInvoices() {
   const { access } = useAuth();
   const companyId = access?.company?.id;
-
+  // TODO: tenant_invoices is not defined yet, wait for Phase 2/3. Just return empty for now.
   return useQuery({
     queryKey: ["invoices", companyId],
     queryFn: async () => {
-      if (!companyId) return [];
-      const { data, error } = await supabase
-        .from("tenant_invoices" as any)
-        .select(`
-          *,
-          tenant:tenants(id, full_name),
-          property:properties(id, name)
-        `)
-        .eq("company_id", companyId)
-        .order("due_date", { ascending: false });
-
-      if (error) throw error;
-      return data as any[];
+      return [] as any[];
     },
     enabled: !!companyId,
   });
@@ -60,20 +57,25 @@ export function useInvoices() {
 export function useCommissions() {
   const { access } = useAuth();
   const companyId = access?.company?.id;
+  const isClient = access?.roles?.some(r => r.slug === 'client_landlord');
+  const ownerId = access?.profile?.id;
 
   return useQuery({
-    queryKey: ["commissions", companyId],
+    queryKey: ["commissions", companyId, isClient ? ownerId : 'all'],
     queryFn: async () => {
       if (!companyId) return [];
-      const { data, error } = await supabase
+      let q = supabase
         .from("commissions" as any)
         .select(`
-          *,
-          property:properties(id, name)
+          *
         `)
-        .eq("company_id", companyId)
-        .order("created_at", { ascending: false });
+        .eq("company_id", companyId);
 
+      if (isClient && ownerId) {
+        q = q.eq("owner_id", ownerId);
+      }
+
+      const { data, error } = await q.order("created_at", { ascending: false });
       if (error) throw error;
       return data as any[];
     },

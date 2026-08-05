@@ -31,12 +31,21 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { money } from "@/lib/platform";
+import { money, COMPANY_TYPES, companyTypeLabel } from "@/lib/platform";
 import type { SubscriptionQuote } from "@/lib/platform";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -60,7 +69,8 @@ type Metric = {
 function Dashboard() {
   const { access, can } = useAuth();
   const isSuper = access?.profile?.is_super_admin ?? false;
-  return isSuper ? <PlatformDashboard /> : <CompanyDashboard />;
+  // If Super Admin has a company loaded, they are impersonating it, so show CompanyDashboard
+  return isSuper && !access?.company ? <PlatformDashboard /> : <CompanyDashboard />;
 }
 
 function Header({ title, subtitle }: { title: string; subtitle: string }) {
@@ -112,6 +122,22 @@ function MetricGrid({ metrics, loading }: { metrics: Metric[]; loading: boolean 
 }
 
 function PlatformDashboard() {
+  const queryClient = useQueryClient();
+  const { can } = useAuth();
+  
+  const updateCompany = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: any }) => {
+      const { error } = await supabase.from("companies").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["platform-dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["companies"] });
+      toast.success("Company updated");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const { data, isLoading } = useQuery({
     queryKey: ["platform-dashboard"],
     queryFn: async () => {
@@ -250,9 +276,35 @@ function PlatformDashboard() {
               className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
             >
               <span className="font-medium">{c.name}</span>
-              <Badge variant="outline" className="text-[11px]">
-                {c.activation_status}
-              </Badge>
+              <div className="flex items-center gap-2">
+                {can("companies.suspend") ? (
+                  <Select
+                    value={c.company_type}
+                    onValueChange={(val) =>
+                      updateCompany.mutate({ id: c.id, patch: { company_type: val } })
+                    }
+                    disabled={updateCompany.isPending}
+                  >
+                    <SelectTrigger className="h-7 w-[160px] text-[11px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMPANY_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value} className="text-xs">
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Badge variant="secondary" className="text-[11px]">
+                    {companyTypeLabel(c.company_type)}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="text-[11px]">
+                  {c.activation_status}
+                </Badge>
+              </div>
             </div>
           ))}
         </CardContent>
@@ -271,13 +323,28 @@ function CompanyDashboard() {
     enabled: Boolean(companyId),
     queryFn: async () => {
       const head = { count: "exact" as const, head: true };
+      const isClient = access?.roles?.some(r => r.slug === 'client_landlord');
+      const ownerId = isClient ? access?.profile?.id : null;
+
+      let propQuery = supabase.from("properties").select("id", head).eq("company_id", companyId!);
+      let unitsQuery = supabase.from("units").select("id", head).eq("company_id", companyId!);
+      let occQuery = supabase.from("units").select("id", head).eq("company_id", companyId!).eq("status", "occupied");
+      let uRowsQuery = supabase.from("units").select("rent, status, property_id").eq("company_id", companyId!);
+
+      if (isClient && ownerId) {
+        propQuery = propQuery.eq("owner_id", ownerId);
+        unitsQuery = supabase.from("units").select("id, properties!inner(owner_id)", head).eq("company_id", companyId!).eq("properties.owner_id", ownerId) as any;
+        occQuery = supabase.from("units").select("id, properties!inner(owner_id)", head).eq("company_id", companyId!).eq("status", "occupied").eq("properties.owner_id", ownerId) as any;
+        uRowsQuery = supabase.from("units").select("rent, status, properties!inner(owner_id)").eq("company_id", companyId!).eq("properties.owner_id", ownerId) as any;
+      }
+
       const [staff, roles, properties, units, occupied, unitRows, licence, quote] = await Promise.all([
         supabase.from("profiles").select("id", head).eq("company_id", companyId!),
         supabase.from("roles").select("id", head).eq("company_id", companyId!),
-        supabase.from("properties").select("id", head).eq("company_id", companyId!),
-        supabase.from("units").select("id", head).eq("company_id", companyId!),
-        supabase.from("units").select("id", head).eq("company_id", companyId!).eq("status", "occupied"),
-        supabase.from("units").select("rent, status").eq("company_id", companyId!),
+        propQuery,
+        unitsQuery,
+        occQuery,
+        uRowsQuery,
         supabase.from("licences").select("code").eq("company_id", companyId!).maybeSingle(),
         supabase.rpc("calculate_subscription", { _company_id: companyId!, _paid_only: false }),
       ]);
@@ -304,37 +371,39 @@ function CompanyDashboard() {
 
   const occupancy = data?.units ? Math.round((data.occupied / data.units) * 100) : 0;
 
+  const isBnb = access?.company?.company_type === 'airbnb_host';
+
   const metrics: Metric[] = [
     {
-      label: "Properties",
+      label: isBnb ? "Listings" : "Properties",
       value: String(data?.properties ?? 0),
       hint: data?.properties ? "In your portfolio" : "Register your first property",
       icon: Building2,
       permission: "property.view",
     },
     {
-      label: "Units",
+      label: isBnb ? "Rooms" : "Units",
       value: String(data?.units ?? 0),
       hint: "Generated from unit types",
       icon: DoorOpen,
       permission: "unit.view",
     },
     {
-      label: "Occupied units",
+      label: isBnb ? "Booked rooms" : "Occupied units",
       value: String(data?.occupied ?? 0),
       hint: `Occupancy ${occupancy}%`,
       icon: TrendingUp,
       permission: "unit.view",
     },
     {
-      label: "Active tenants",
+      label: isBnb ? "Active guests" : "Active tenants",
       value: "0",
       hint: "Leases arrive next phase",
       icon: Users,
       permission: "tenant.view",
     },
     {
-      label: "Expected rent",
+      label: isBnb ? "Expected payout" : "Expected rent",
       value: money(data?.billed ?? 0, currency),
       hint: `${money(data?.potential ?? 0, currency)} at full occupancy`,
       icon: Wallet,

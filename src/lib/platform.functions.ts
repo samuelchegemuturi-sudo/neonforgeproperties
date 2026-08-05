@@ -106,9 +106,16 @@ export const adminCreateCompany = createServerFn({ method: "POST" })
 
     const newUserId = created.user!.id;
 
+    const positionName = data.company_type === 'airbnb_host' ? 'Host' :
+                         data.company_type === 'property_management_agency' ? 'Agency Admin' :
+                         data.company_type === 'real_estate_company' ? 'Broker' :
+                         data.company_type === 'developer' ? 'Developer' :
+                         data.company_type === 'sacco' ? 'SACCO Admin' :
+                         'Landlord';
+
     await supabaseAdmin
       .from("profiles")
-      .update({ company_id: company.id, full_name: data.owner_name, position: "Landlord" })
+      .update({ company_id: company.id, full_name: data.owner_name, position: positionName })
       .eq("id", created.user!.id);
 
     const { data: landlordRole } = await supabaseAdmin.rpc("seed_company_roles", {
@@ -119,6 +126,11 @@ export const adminCreateCompany = createServerFn({ method: "POST" })
       await supabaseAdmin
         .from("user_roles")
         .insert({ user_id: newUserId, role_id: landlordRole as string, company_id: company.id });
+        
+      await supabaseAdmin
+        .from("roles")
+        .update({ name: positionName })
+        .eq("id", landlordRole as string);
     }
 
     await supabaseAdmin.from("audit_logs").insert({

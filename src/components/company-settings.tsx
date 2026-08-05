@@ -38,9 +38,9 @@ export function CompanySettings() {
   const uploadLogo = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!event.target.files || event.target.files.length === 0) return;
-      if (!access?.company?.id) throw new Error("Company unavailable");
-
       const file = event.target.files[0];
+      if (!file) return;
+      if (!access?.company?.id) throw new Error("Company unavailable");
       const fileExt = file.name.split('.').pop();
       const filePath = `${access.company.id}/logo.${fileExt}`;
 
@@ -76,7 +76,7 @@ export function CompanySettings() {
     <div className="space-y-6">
       <div className="flex items-center gap-6">
         <Avatar className="h-24 w-24 border">
-          <AvatarImage src={access?.company?.logo_url ?? undefined} className="object-contain" />
+          <AvatarImage src={(access?.company as any)?.logo_url ?? undefined} className="object-contain" />
           <AvatarFallback className="text-2xl">{access?.company?.name?.charAt(0) ?? "C"}</AvatarFallback>
         </Avatar>
         <div className="space-y-2">

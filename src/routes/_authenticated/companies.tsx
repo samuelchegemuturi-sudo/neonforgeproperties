@@ -413,7 +413,30 @@ function CompaniesPage() {
                         <p className="font-medium">{c.name}</p>
                         <p className="text-xs text-muted-foreground">{c.email ?? "—"}</p>
                       </TableCell>
-                      <TableCell className="text-sm">{companyTypeLabel(c.company_type)}</TableCell>
+                      <TableCell className="text-sm">
+                        {can("companies.suspend") ? (
+                          <Select
+                            value={c.company_type}
+                            onValueChange={(val) =>
+                              updateCompany.mutate({ id: c.id, patch: { company_type: val } })
+                            }
+                            disabled={updateCompany.isPending}
+                          >
+                            <SelectTrigger className="h-8 w-[180px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {COMPANY_TYPES.map((t) => (
+                                <SelectItem key={t.value} value={t.value} className="text-xs">
+                                  {t.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          companyTypeLabel(c.company_type)
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={statusTone(c.activation_status)}>
                           {titleCase(c.activation_status)}

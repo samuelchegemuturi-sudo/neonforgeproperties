@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export const BACKGROUNDS = [
   { id: 'modern-house', url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80', label: 'Modern House' },
@@ -27,7 +27,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       // Default to modern house
-      backgroundImage: BACKGROUNDS[0].url,
+      backgroundImage: BACKGROUNDS[0]?.url || '',
       setBackgroundImage: (url) => set({ backgroundImage: url }),
       
       // Default styles for iOS liquid glass
@@ -41,7 +41,8 @@ export const useAppStore = create<AppState>()(
       setImpersonatedCompanyId: (id) => set({ impersonatedCompanyId: id }),
     }),
     {
-      name: 'neonforge-app-storage',
+      name: 'neon-forge-ui-settings',
+      storage: typeof window !== 'undefined' ? createJSONStorage(() => localStorage) : undefined,
     }
   )
 );

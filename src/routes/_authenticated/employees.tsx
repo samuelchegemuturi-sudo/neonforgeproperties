@@ -254,7 +254,7 @@ function EmployeesPage() {
                     email: fd.get("email") as string,
                     position: fd.get("position") as string,
                     role_id: fd.get("role_id") as string,
-                    roleSlug: selectedRole?.slug,
+                    ...(selectedRole?.slug ? { roleSlug: selectedRole.slug } : {}),
                   });
                 }}
                 className="grid gap-4 py-4"

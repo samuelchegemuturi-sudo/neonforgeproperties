@@ -24,7 +24,7 @@ CREATE POLICY platform_settings_read ON public.platform_settings FOR SELECT TO a
 DROP POLICY IF EXISTS platform_settings_write ON public.platform_settings;
 CREATE POLICY platform_settings_write ON public.platform_settings FOR ALL TO authenticated
   USING (public.is_super_admin(auth.uid())) WITH CHECK (public.is_super_admin(auth.uid()));
-DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.platform_settings
+DROP TRIGGER IF EXISTS platform_settings_updated_at ON public.platform_settings; CREATE TRIGGER platform_settings_updated_at BEFORE UPDATE ON public.platform_settings
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 INSERT INTO public.platform_settings (key, value, label, category) VALUES
@@ -49,10 +49,12 @@ CREATE TABLE IF NOT EXISTS public.pricing_rules (
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.pricing_rules TO authenticated;
 GRANT ALL ON public.pricing_rules TO service_role;
 ALTER TABLE public.pricing_rules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS pricing_rules_read ON public.pricing_rules;
 CREATE POLICY pricing_rules_read ON public.pricing_rules FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS pricing_rules_write ON public.pricing_rules;
 CREATE POLICY pricing_rules_write ON public.pricing_rules FOR ALL TO authenticated
   USING (public.is_super_admin(auth.uid())) WITH CHECK (public.is_super_admin(auth.uid()));
-DROP TRIGGER IF EXISTS  ON public.platform_settings; CREATE TRIGGER  BEFORE UPDATE ON public.pricing_rules
+DROP TRIGGER IF EXISTS pricing_rules_updated_at ON public.pricing_rules; CREATE TRIGGER pricing_rules_updated_at BEFORE UPDATE ON public.pricing_rules
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 INSERT INTO public.pricing_rules (slug, label, bedrooms, price_per_unit, category, is_configurable, sort_order) VALUES

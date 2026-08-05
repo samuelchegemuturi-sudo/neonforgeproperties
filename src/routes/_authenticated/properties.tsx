@@ -62,15 +62,34 @@ function PropertiesPage() {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<PropertyRow | null>(null);
 
-  const { data: properties, isLoading } = useQuery({
-    queryKey: ["properties"],
+  const { data: clientLandlords } = useQuery({
+    queryKey: ["client-landlords", companyId],
+    enabled: Boolean(companyId),
     queryFn: async () => {
       const { data, error } = await supabase
+        .from("user_roles")
+        .select("user_id, profiles(id, full_name, email), roles!inner(slug)")
+        .eq("company_id", companyId!)
+        .eq("roles.slug", "client_landlord");
+      if (error) throw error;
+      return (data.map((d: any) => d.profiles) || []) as { id: string; full_name: string; email: string }[];
+    },
+  });
+
+  const { data: properties, isLoading } = useQuery({
+    queryKey: ["properties", access?.roles?.some(r => r.slug === "client_landlord") ? "client_landlord" : "all"],
+    queryFn: async () => {
+      let q = supabase
         .from("properties")
         .select(
-          "id, name, property_type, address, city, latitude, longitude, status, verification_status, created_at, company_id, units(count)",
-        )
-        .order("created_at", { ascending: false });
+          "id, name, property_type, address, city, latitude, longitude, status, verification_status, created_at, company_id, owner_id, units(count)",
+        );
+      
+      if (access?.roles?.some(r => r.slug === "client_landlord") && access?.profile?.id) {
+        q = q.eq("owner_id", access.profile.id);
+      }
+
+      const { data, error } = await q.order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as PropertyRow[];
     },
@@ -87,6 +106,7 @@ function PropertiesPage() {
         city: input['city'] || null,
         latitude: input['latitude'] ? Number(input['latitude']) : null,
         longitude: input['longitude'] ? Number(input['longitude']) : null,
+        owner_id: input['owner_id'] && input['owner_id'] !== 'none' ? input['owner_id'] : null,
       });
       if (error) throw error;
     },
@@ -166,6 +186,24 @@ function PropertiesPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  {clientLandlords && clientLandlords.length > 0 && (
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="p-owner">Property Owner (Client Landlord)</Label>
+                      <Select name="owner_id">
+                        <SelectTrigger id="p-owner">
+                          <SelectValue placeholder="Select an owner (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None (Agency owned)</SelectItem>
+                          {clientLandlords.map((cl) => (
+                            <SelectItem key={cl.id} value={cl.id}>
+                              {cl.full_name} ({cl.email})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="grid gap-1.5">
                     <Label htmlFor="p-address">Address</Label>
                     <Input id="p-address" name="address" placeholder="Ngong Road" />
