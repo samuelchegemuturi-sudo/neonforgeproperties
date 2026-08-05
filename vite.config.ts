@@ -13,7 +13,10 @@ export default defineConfig({
     server: { entry: "server" },
   },
   nitro: {
-    preset: "vercel"
+    preset: "vercel",
+    externals: {
+      inline: [/^@supabase/, /^tslib/]
+    }
   },
   ssr: {
     noExternal: ['@supabase/supabase-js', '@supabase/functions-js', 'tslib']
