@@ -5,11 +5,11 @@ import { i as useQueryClient, n as useQuery, t as useMutation } from "../_libs/t
 import { i as useAuth } from "./auth-BCmnXUlU.mjs";
 import { t as Button } from "./button-Bq5vK6RO.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
-import { M as KeyRound } from "../_libs/lucide-react.mjs";
+import { N as KeyRound } from "../_libs/lucide-react.mjs";
+import { a as TableHeader, i as TableHead, n as TableBody, o as TableRow, r as TableCell, t as Table } from "./table-C0WYWEQX.mjs";
 import { t as Badge } from "./badge-D1Dupn2y.mjs";
 import { t as Skeleton } from "./skeleton-D9W9wFsj.mjs";
 import { a as statusTone, i as shortDate, o as titleCase, r as money } from "./platform-Df7WJh8D.mjs";
-import { a as TableHeader, i as TableHead, n as TableBody, o as TableRow, r as TableCell, t as Table } from "./table-C0WYWEQX.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/licences-IBi5f1eI.js
 var import_jsx_runtime = require_jsx_runtime();
 function LicencesPage() {

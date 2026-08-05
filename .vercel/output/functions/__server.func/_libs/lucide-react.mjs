@@ -390,6 +390,19 @@ var CircleAlert = createLucideIcon("circle-alert", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var CircleCheckBig = createLucideIcon("circle-check-big", [["path", {
+	d: "M21.801 10A10 10 0 1 1 17 3.335",
+	key: "yps3ct"
+}], ["path", {
+	d: "m9 11 3 3L22 4",
+	key: "1pflzl"
+}]]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var CircleCheck = createLucideIcon("circle-check", [["circle", {
 	cx: "12",
 	cy: "12",
@@ -891,6 +904,16 @@ var PanelLeft = createLucideIcon("panel-left", [["rect", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Pen = createLucideIcon("pen", [["path", {
+	d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
+	key: "1a8usu"
+}]]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var Percent = createLucideIcon("percent", [
 	["line", {
 		x1: "19",
@@ -1315,4 +1338,4 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-export { Ban as $, LifeBuoy as A, Copy as B, Moon as C, MapPin as D, Map as E, Download as F, ChevronUp as G, CirclePlus as H, DoorOpen as I, Check as J, ChevronRight as K, DollarSign as L, KeyRound as M, House as N, LogOut as O, FileText as P, Bell as Q, DatabaseBackup as R, Palette as S, Megaphone as T, CircleCheck as U, Circle as V, CircleAlert as W, Building2 as X, ChartColumn as Y, Briefcase as Z, Printer as _, UserCog as a, ArrowDownUp as at, Percent as b, Trash2 as c, ShieldCheck as d, BadgeCheck as et, Settings as f, Save as g, ScrollText as h, Users as i, ArrowLeftRight as it, LayoutDashboard as j, LoaderCircle as k, Tags as l, Search as m, Wrench as n, ArrowRight as nt, Undo2 as o, Activity as ot, Send as p, ChevronDown as q, Wallet as r, ArrowLeft as rt, TrendingUp as s, X as t, ArrowUpRight as tt, Sun as u, Plus as v, Monitor as w, PanelLeft as x, Plug as y, CreditCard as z };
+export { Briefcase as $, LoaderCircle as A, CreditCard as B, Palette as C, Map as D, Megaphone as E, FileText as F, CircleCheckBig as G, Circle as H, Download as I, ChevronRight as J, CircleAlert as K, DoorOpen as L, LayoutDashboard as M, KeyRound as N, MapPin as O, House as P, Building2 as Q, DollarSign as R, PanelLeft as S, Monitor as T, CirclePlus as U, Copy as V, CircleCheck as W, Check as X, ChevronDown as Y, ChartColumn as Z, Printer as _, UserCog as a, ArrowLeft as at, Percent as b, Trash2 as c, Activity as ct, ShieldCheck as d, Bell as et, Settings as f, Save as g, ScrollText as h, Users as i, ArrowRight as it, LifeBuoy as j, LogOut as k, Tags as l, Search as m, Wrench as n, BadgeCheck as nt, Undo2 as o, ArrowLeftRight as ot, Send as p, ChevronUp as q, Wallet as r, ArrowUpRight as rt, TrendingUp as s, ArrowDownUp as st, X as t, Ban as tt, Sun as u, Plus as v, Moon as w, Pen as x, Plug as y, DatabaseBackup as z };

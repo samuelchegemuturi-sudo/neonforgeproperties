@@ -5,7 +5,7 @@ import { n as AvatarFallback$1, p as require_jsx_runtime, r as AvatarImage$1, t 
 import { t as supabase } from "./client-BNXqJcVa.mjs";
 import { t as Button } from "./button-Bq5vK6RO.mjs";
 import { t as Label } from "./label-DBD1bRRP.mjs";
-import { C as Moon, J as Check, S as Palette, u as Sun, w as Monitor } from "../_libs/lucide-react.mjs";
+import { C as Palette, T as Monitor, X as Check, u as Sun, w as Moon } from "../_libs/lucide-react.mjs";
 import { i as Trigger, n as Portal, r as Root2, t as Content2 } from "../_libs/radix-ui__react-popover.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/avatar-B0TtxMp4.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
