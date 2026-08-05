@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle, Search, Wrench } from 'lucide-react';
+import { PlusCircle, Search, Wrench, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute('/_authenticated/maintenance')({
@@ -28,6 +28,9 @@ function MaintenanceComponent() {
   const queryClient = useQueryClient();
   
   const [open, setOpen] = useState(false);
+  const [resolveOpen, setResolveOpen] = useState(false);
+  const [resolvingReq, setResolvingReq] = useState<any>(null);
+  const [repairCost, setRepairCost] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Form state
@@ -77,10 +80,11 @@ function MaintenanceComponent() {
       let query = supabase
         .from('maintenance_requests' as any)
         .select(`
-          id, title, status, priority, created_at,
+          id, title, status, priority, created_at, cost,
           properties (name),
           units (unit_number),
-          reported_by (email, full_name)
+          reported_by (email, full_name),
+          assigned_to (id, email, full_name)
         `)
         .order('created_at', { ascending: false });
       
@@ -148,8 +152,11 @@ function MaintenanceComponent() {
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status, reqInfo }: { id: string, status: string, reqInfo?: any }) => {
-      const { error } = await supabase.from('maintenance_requests' as any).update({ status }).eq('id', id);
+    mutationFn: async ({ id, status, cost, reqInfo }: { id: string, status: string, cost?: number, reqInfo?: any }) => {
+      const updateData: any = { status };
+      if (cost !== undefined) updateData.cost = cost;
+      
+      const { error } = await supabase.from('maintenance_requests' as any).update(updateData).eq('id', id);
       if (error) throw error;
       return { id, status, reqInfo };
     },
@@ -299,18 +306,20 @@ function MaintenanceComponent() {
                 <TableHead>Location</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Priority</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>Cost (KES)</TableHead>
+                <TableHead>Assigned To</TableHead>
+                <TableHead>Date Reported</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">Loading requests...</TableCell>
+                  <TableCell colSpan={8} className="h-24 text-center">Loading requests...</TableCell>
                 </TableRow>
               ) : filteredRequests.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center flex flex-col items-center justify-center gap-2">
+                  <TableCell colSpan={8} className="h-24 text-center flex flex-col items-center justify-center gap-2">
                     <Wrench className="h-8 w-8 text-muted-foreground" />
                     <p>No maintenance requests found.</p>
                   </TableCell>
@@ -333,10 +342,24 @@ function MaintenanceComponent() {
                         {req.priority}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {req.cost ? Number(req.cost).toLocaleString() : '-'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {req.assigned_to ? req.assigned_to.full_name || req.assigned_to.email : <span className="text-muted-foreground italic">Unassigned</span>}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(req.created_at).toLocaleDateString()}
+                    </TableCell>
                     <TableCell className="text-right">
                       {req.status !== 'completed' && (
-                        <Button variant="outline" size="sm" onClick={() => updateStatus.mutate({ id: req.id, status: 'completed', reqInfo: req })}>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setResolvingReq(req);
+                          setRepairCost('');
+                          setResolveOpen(true);
+                        }}>
                           Mark Complete
                         </Button>
                       )}
@@ -353,6 +376,49 @@ function MaintenanceComponent() {
           </Table>
         </div>
       </Card>
+
+      <Dialog open={resolveOpen} onOpenChange={setResolveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="size-5 text-emerald-500" /> Resolve Work Order
+            </DialogTitle>
+            <DialogDescription>
+              Marking this work order as complete will notify the reporter. You can also log any repair costs associated with this fix.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Repair Cost (Optional)</label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g. 1500"
+                value={repairCost}
+                onChange={(e) => setRepairCost(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Log any expenses incurred during this repair for accounting.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResolveOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              if (resolvingReq) {
+                updateStatus.mutate({ 
+                  id: resolvingReq.id, 
+                  status: 'completed', 
+                  cost: repairCost ? Number(repairCost) : undefined, 
+                  reqInfo: resolvingReq 
+                });
+                setResolveOpen(false);
+              }
+            }} disabled={updateStatus.isPending}>
+              {updateStatus.isPending ? "Saving..." : "Mark Complete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

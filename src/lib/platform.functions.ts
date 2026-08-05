@@ -126,12 +126,13 @@ export const adminCreateCompany = createServerFn({ method: "POST" })
       await supabaseAdmin
         .from("user_roles")
         .insert({ user_id: newUserId, role_id: landlordRole as string, company_id: company.id });
-        
       await supabaseAdmin
         .from("roles")
         .update({ name: positionName })
         .eq("id", landlordRole as string);
     }
+
+    await supabaseAdmin.rpc("generate_licence", { _company_id: company.id });
 
     await supabaseAdmin.from("audit_logs").insert({
       company_id: company.id,
@@ -596,7 +597,7 @@ export const adminDeleteCompany = createServerFn({ method: "POST" })
 
 export const registerCompanyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: { company_name: string; phone?: string; }) => {
+  .validator((input: { company_name: string; phone?: string; company_type?: string }) => {
     if (!input.company_name?.trim()) throw new Error("Company name is required");
     return input;
   })
@@ -615,16 +616,20 @@ export const registerCompanyFn = createServerFn({ method: "POST" })
         name: data.company_name.trim(),
         email: profile?.email || "",
         phone: data.phone ?? null,
-        company_type: "Property Management",
+        company_type: data.company_type || "Property Management",
         activation_status: "pending_activation",
       })
       .select("id, name")
       .single();
     if (companyError) throw new Error(companyError.message);
 
+    const positionName = data.company_type === 'bnb_host' ? 'Host' :
+                         data.company_type === 'property_management_agency' ? 'Agency Admin' :
+                         'Landlord';
+
     await supabaseAdmin
       .from("profiles")
-      .update({ company_id: company.id, position: "Landlord" })
+      .update({ company_id: company.id, position: positionName })
       .eq("id", userId);
 
     const { data: landlordRole } = await supabaseAdmin.rpc("seed_company_roles", {
@@ -638,7 +643,13 @@ export const registerCompanyFn = createServerFn({ method: "POST" })
       await supabaseAdmin
         .from("user_roles")
         .insert({ user_id: userId, role_id: landlordRole as string, company_id: company.id });
+      await supabaseAdmin
+        .from("roles")
+        .update({ name: positionName })
+        .eq("id", landlordRole as string);
     }
+
+    await supabaseAdmin.rpc("generate_licence", { _company_id: company.id });
 
     return { companyId: company.id };
   });

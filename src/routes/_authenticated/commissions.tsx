@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import { Search } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
 
 export const Route = createFileRoute('/_authenticated/commissions')({
   component: CommissionsComponent,
@@ -15,10 +16,14 @@ function CommissionsComponent() {
   const { data: commissions = [], isLoading } = useCommissions();
   const [search, setSearch] = useState('');
 
-  const filteredCommissions = commissions.filter(c => 
-    c.property?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    c.description?.toLowerCase().includes(search.toLowerCase())
-  );
+  const { access } = useAuth();
+  const isClient = access?.roles?.some(r => r.slug === 'client_landlord');
+
+  const filteredCommissions = commissions.filter(c => {
+    const propertyName = c.transactions?.leases?.units?.properties?.name || '';
+    return propertyName.toLowerCase().includes(search.toLowerCase()) ||
+      c.description?.toLowerCase().includes(search.toLowerCase());
+  });
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -68,10 +73,10 @@ function CommissionsComponent() {
                   filteredCommissions.map(comm => (
                     <tr key={comm.id} className="hover:bg-muted/30">
                       <td className="p-3 whitespace-nowrap">{format(new Date(comm.created_at), 'dd MMM yyyy')}</td>
-                      <td className="p-3 font-medium">{comm.property?.name || 'N/A'}</td>
+                      <td className="p-3 font-medium">{comm.transactions?.leases?.units?.properties?.name || 'N/A'}</td>
                       <td className="p-3 text-muted-foreground">{comm.description || '-'}</td>
                       <td className="p-3 text-right font-medium text-success">
-                        + KSH {Number(comm.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        + KSH {Number(isClient ? comm.owner_amount : comm.agency_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
                       <td className="p-3 text-center">
                         <Badge variant={comm.status === 'paid' ? 'default' : 'secondary'}>

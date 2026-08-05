@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Building2,
@@ -113,7 +114,7 @@ function MetricGrid({ metrics, loading }: { metrics: Metric[]; loading: boolean 
       {!metrics.length && (
         <Card className="sm:col-span-2 xl:col-span-4">
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Your role has no dashboard metrics assigned yet. Ask your landlord to grant permissions.
+            Your role has no dashboard metrics assigned yet. Ask your company administrator to grant permissions.
           </CardContent>
         </Card>
       )}
@@ -317,9 +318,20 @@ function CompanyDashboard() {
   const { access, can } = useAuth();
   const companyId = access?.profile?.company_id ?? null;
   const currency = access?.company?.currency ?? "KES";
+  const [selectedBranch, setSelectedBranch] = useState<string>("all");
+
+  const { data: branches } = useQuery({
+    queryKey: ["branches", companyId],
+    enabled: Boolean(companyId),
+    queryFn: async () => {
+      const { data, error } = await supabase.from("branches").select("id, name").eq("company_id", companyId!);
+      if (error) throw error;
+      return data as { id: string; name: string }[];
+    },
+  });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["company-dashboard", companyId],
+    queryKey: ["company-dashboard", companyId, selectedBranch],
     enabled: Boolean(companyId),
     queryFn: async () => {
       const head = { count: "exact" as const, head: true };
@@ -333,9 +345,21 @@ function CompanyDashboard() {
 
       if (isClient && ownerId) {
         propQuery = propQuery.eq("owner_id", ownerId);
-        unitsQuery = supabase.from("units").select("id, properties!inner(owner_id)", head).eq("company_id", companyId!).eq("properties.owner_id", ownerId) as any;
-        occQuery = supabase.from("units").select("id, properties!inner(owner_id)", head).eq("company_id", companyId!).eq("status", "occupied").eq("properties.owner_id", ownerId) as any;
-        uRowsQuery = supabase.from("units").select("rent, status, properties!inner(owner_id)").eq("company_id", companyId!).eq("properties.owner_id", ownerId) as any;
+        unitsQuery = supabase.from("units").select("id, properties!inner(owner_id, branch_id)", head).eq("company_id", companyId!).eq("properties.owner_id", ownerId) as any;
+        occQuery = supabase.from("units").select("id, properties!inner(owner_id, branch_id)", head).eq("company_id", companyId!).eq("status", "occupied").eq("properties.owner_id", ownerId) as any;
+        uRowsQuery = supabase.from("units").select("rent, status, properties!inner(owner_id, branch_id)").eq("company_id", companyId!).eq("properties.owner_id", ownerId) as any;
+      } else {
+        // Even if not client, we need branch_id for filtering
+        unitsQuery = supabase.from("units").select("id, properties!inner(branch_id)", head).eq("company_id", companyId!) as any;
+        occQuery = supabase.from("units").select("id, properties!inner(branch_id)", head).eq("company_id", companyId!).eq("status", "occupied") as any;
+        uRowsQuery = supabase.from("units").select("rent, status, properties!inner(branch_id)").eq("company_id", companyId!) as any;
+      }
+
+      if (selectedBranch !== "all") {
+        propQuery = propQuery.eq("branch_id", selectedBranch);
+        unitsQuery = unitsQuery.eq("properties.branch_id", selectedBranch) as any;
+        occQuery = occQuery.eq("properties.branch_id", selectedBranch) as any;
+        uRowsQuery = uRowsQuery.eq("properties.branch_id", selectedBranch) as any;
       }
 
       const [staff, roles, properties, units, occupied, unitRows, licence, quote] = await Promise.all([
@@ -448,12 +472,27 @@ function CompanyDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <Header
-        title={`${access?.company?.name ?? "Executive"} dashboard`}
-        subtitle={`Signed in as ${
-          access?.roles.map((r) => r.name).join(", ") || "no role assigned"
-        }. You see only what your permissions allow.`}
-      />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <Header
+          title={`${access?.company?.name ?? "Executive"} dashboard`}
+          subtitle={`Signed in as ${
+            access?.roles.map((r) => r.name).join(", ") || "no role assigned"
+          }. You see only what your permissions allow.`}
+        />
+        {branches && branches.length > 0 && (
+          <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Branches" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Branches</SelectItem>
+              {branches.map(b => (
+                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
       {!isLoading && companyId && !data?.licence && (
         <Card className="border-primary/40 bg-primary/5">

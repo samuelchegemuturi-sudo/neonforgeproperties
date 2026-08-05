@@ -69,13 +69,14 @@ function IntegrationsComponent() {
   }, [platformSettings]);
 
   const saveSetting = useMutation({
-    mutationFn: async (settingsToSave: { key: string; value: string | number | boolean }[]) => {
+    mutationFn: async (settingsToSave: { key: string; value: string | number | boolean; label: string; category: string }[]) => {
       // Upsert multiple settings at once
       const { error } = await supabase.from("platform_settings").upsert(
         settingsToSave.map(s => ({
           key: s.key,
           value: s.value,
-          // We don't update label/category here, assuming they exist or defaults
+          label: s.label,
+          category: s.category
         })) as any[],
         { onConflict: 'key' }
       );
@@ -93,7 +94,7 @@ function IntegrationsComponent() {
     const toSave = rows.map(row => {
       const raw = settingDraft[row.key] ?? String(row.value ?? "");
       const parsed = raw === "true" ? true : raw === "false" ? false : raw;
-      return { key: row.key, value: parsed };
+      return { key: row.key, value: parsed, label: row.label, category: row.category };
     });
     
     // Check if any draft actually changed to avoid empty saves

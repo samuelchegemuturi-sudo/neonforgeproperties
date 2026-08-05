@@ -4,6 +4,7 @@ import { useTransactions, useInvoices, useCommissions } from '@/hooks/use-financ
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Wallet, ArrowDownUp, Percent } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
+import { useAuth } from '@/lib/auth';
 
 export const Route = createFileRoute('/_authenticated/finance')({
   component: FinanceComponent,
@@ -23,9 +24,11 @@ function FinanceComponent() {
     .filter(i => i.status !== 'paid' && i.status !== 'void')
     .reduce((acc, i) => acc + (Number(i.amount) || 0), 0);
 
+  const { access } = useAuth();
+  const isClient = access?.roles?.some(r => r.slug === 'client_landlord');
+
   const totalCommissions = commissions
-    .filter(c => c.status === 'paid')
-    .reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
+    .reduce((acc, c) => acc + (Number(isClient ? c.owner_amount : c.agency_amount) || 0), 0);
 
   // Group transactions by month for the chart
   const last6Months = Array.from({ length: 6 }).map((_, i) => format(subMonths(new Date(), i), 'MMM yyyy')).reverse();

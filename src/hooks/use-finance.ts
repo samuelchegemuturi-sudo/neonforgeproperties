@@ -67,7 +67,14 @@ export function useCommissions() {
       let q = supabase
         .from("commissions" as any)
         .select(`
-          *
+          *,
+          transactions!inner(
+            leases!inner(
+              units!inner(
+                properties!inner(id, name)
+              )
+            )
+          )
         `)
         .eq("company_id", companyId);
 

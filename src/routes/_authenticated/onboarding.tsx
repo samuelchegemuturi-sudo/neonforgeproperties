@@ -219,7 +219,8 @@ function Onboarding() {
               registerCompany.mutate({
                 company_name: String(form.get("company_name")),
                 phone: String(form.get("phone")),
-              });
+                company_type: String(form.get("company_type")),
+              } as any);
             }} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="company_name">Company Name</Label>
@@ -228,6 +229,19 @@ function Onboarding() {
               <div className="space-y-1.5">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input id="phone" name="phone" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="company_type">Company Type</Label>
+                <select 
+                  id="company_type" 
+                  name="company_type" 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  required
+                >
+                  <option value="individual_landlord">Individual Landlord</option>
+                  <option value="property_management_agency">Property Management Agency</option>
+                  <option value="bnb_host">AirBnB / Short Term Host</option>
+                </select>
               </div>
               <Button type="submit" className="w-full" disabled={registerCompany.isPending}>
                 {registerCompany.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}

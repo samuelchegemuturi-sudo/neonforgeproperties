@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, ShieldCheck, Loader2, Trash2 } from "lucide-react";
+import { Plus, ShieldCheck, Loader2, Trash2, Edit2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +51,8 @@ function RolesPage() {
   const queryClient = useQueryClient();
   const editable = can("roles.edit");
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
 
   const { data: roles, isLoading: rolesLoading } = useQuery({
     queryKey: ["roles", companyId],
@@ -165,6 +167,23 @@ function RolesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const updateRoleName = useMutation({
+    mutationFn: async (input: { id: string; name: string }) => {
+      const { error } = await supabase
+        .from("roles")
+        .update({ name: input.name })
+        .eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Role name updated");
+      setEditOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ["roles", companyId] });
+      void queryClient.invalidateQueries({ queryKey: ["access"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -227,20 +246,36 @@ function RolesPage() {
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between gap-2">
                 <CardTitle className="text-base">{role.name}</CardTitle>
-                {role.is_system ? (
-                  <Badge variant="secondary">System</Badge>
-                ) : (
-                  can("roles.delete") && (
+                <div className="flex items-center gap-1">
+                  {editable && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={`Delete ${role.name}`}
-                      onClick={() => deleteRole.mutate(role.id)}
+                      className="h-8 w-8"
+                      onClick={() => {
+                        setEditingRole(role);
+                        setEditOpen(true);
+                      }}
                     >
-                      <Trash2 className="size-4" />
+                      <Edit2 className="size-3.5" />
                     </Button>
-                  )
-                )}
+                  )}
+                  {role.is_system ? (
+                    <Badge variant="secondary" className="ml-1">System</Badge>
+                  ) : (
+                    can("roles.delete") && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        aria-label={`Delete ${role.name}`}
+                        onClick={() => deleteRole.mutate(role.id)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    )
+                  )}
+                </div>
               </div>
               <CardDescription className="line-clamp-2">
                 {role.description ?? "Custom role"}
@@ -254,6 +289,42 @@ function RolesPage() {
           </Card>
         ))}
       </div>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Role</DialogTitle>
+            <DialogDescription>
+              Change the display name of this role.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            id="rename-role-form"
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              if (editingRole) {
+                updateRoleName.mutate({
+                  id: editingRole.id,
+                  name: String(fd.get("name")),
+                });
+              }
+            }}
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="rename-name">Role name</Label>
+              <Input id="rename-name" name="name" defaultValue={editingRole?.name} required />
+            </div>
+          </form>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button type="submit" form="rename-role-form" disabled={updateRoleName.isPending}>
+              {updateRoleName.isPending && <Loader2 className="mr-2 size-4 animate-spin" />} Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>

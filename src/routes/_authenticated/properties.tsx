@@ -76,6 +76,16 @@ function PropertiesPage() {
     },
   });
 
+  const { data: branches } = useQuery({
+    queryKey: ["branches", companyId],
+    enabled: Boolean(companyId),
+    queryFn: async () => {
+      const { data, error } = await supabase.from("branches").select("id, name").eq("company_id", companyId!);
+      if (error) throw error;
+      return data as { id: string; name: string }[];
+    },
+  });
+
   const { data: properties, isLoading } = useQuery({
     queryKey: ["properties", access?.roles?.some(r => r.slug === "client_landlord") ? "client_landlord" : "all"],
     queryFn: async () => {
@@ -107,6 +117,7 @@ function PropertiesPage() {
         latitude: input['latitude'] ? Number(input['latitude']) : null,
         longitude: input['longitude'] ? Number(input['longitude']) : null,
         owner_id: input['owner_id'] && input['owner_id'] !== 'none' ? input['owner_id'] : null,
+        branch_id: input['branch_id'] && input['branch_id'] !== 'none' ? input['branch_id'] : null,
       });
       if (error) throw error;
     },
@@ -198,6 +209,24 @@ function PropertiesPage() {
                           {clientLandlords.map((cl) => (
                             <SelectItem key={cl.id} value={cl.id}>
                               {cl.full_name} ({cl.email})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {branches && branches.length > 0 && (
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="p-branch">Branch / Region</Label>
+                      <Select name="branch_id">
+                        <SelectTrigger id="p-branch">
+                          <SelectValue placeholder="Select a branch (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Unassigned</SelectItem>
+                          {branches.map((b) => (
+                            <SelectItem key={b.id} value={b.id}>
+                              {b.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

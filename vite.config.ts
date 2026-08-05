@@ -15,10 +15,11 @@ export default defineConfig({
   nitro: {
     preset: "vercel",
     externals: {
-      inline: [/^@supabase/, /^tslib/]
+      traceInclude: ["node_modules/tslib/**"],
+      inline: [/^@supabase/],
     }
   },
   ssr: {
-    noExternal: ['@supabase/supabase-js', '@supabase/functions-js', 'tslib']
+    noExternal: ['@supabase/supabase-js', '@supabase/functions-js']
   }
 });
