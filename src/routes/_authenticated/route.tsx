@@ -45,9 +45,19 @@ export function RouteComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { blurIntensity, glassOpacity } = useAppStore();
 
+  // Activation enforcement
   useEffect(() => {
-    if (!access) return; 
+    if (!access) return; // Wait for access to load
     
+    const isSuper = access.profile?.is_super_admin;
+    const isEmployee = access.profile?.company_id && !access.company;
+    const isActive = access.company?.activation_status === "active";
+    const isAllowedRoute = ["/onboarding", "/settings", "/auth", "/support"].includes(pathname);
+    
+    if (!isSuper && !isEmployee && !isActive && !isAllowedRoute) {
+      navigate({ to: "/onboarding", replace: true });
+    }
+
     if (user?.user_metadata?.['requires_password_change'] && pathname !== "/force-password-change") {
       navigate({ to: "/force-password-change", replace: true });
     }
