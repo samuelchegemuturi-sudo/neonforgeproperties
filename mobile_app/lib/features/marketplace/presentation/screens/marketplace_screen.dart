@@ -75,15 +75,55 @@ class MarketplaceScreen extends ConsumerWidget {
                               color: AppTheme.darkPurpleText,
                             ),
                           ),
+                          if (prop['companies'] != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                prop['companies']['name'] ?? '',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.primaryPurple,
+                                ),
+                              ),
+                            ),
                           const SizedBox(height: 8),
                           Text(
                             prop['address'] ?? 'No address provided',
                             style: const TextStyle(color: Color(0xFF6B7280)),
                           ),
                           const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {},
-                            child: const Text('View Details'),
+                          if (prop['unit_types'] != null && (prop['unit_types'] as List).isNotEmpty)
+                            ...((prop['unit_types'] as List).map((unitType) {
+                              final units = unitType['units'] as List? ?? [];
+                              final vacantUnits = units.where((u) => u['status'] == 'VACANT' || u['status'] == 'vacant').length;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      unitType['label'] ?? 'Unknown Type',
+                                      style: const TextStyle(fontWeight: FontWeight.w500),
+                                    ),
+                                    Text(
+                                      '$vacantUnits remaining',
+                                      style: const TextStyle(
+                                        color: AppTheme.primaryPurple,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            })),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {},
+                              child: const Text('View Details'),
+                            ),
                           ),
                         ],
                       ),
