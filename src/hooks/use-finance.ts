@@ -44,15 +44,22 @@ export function useTransactions() {
 export function useInvoices() {
   const { access } = useAuth();
   const companyId = access?.company?.id;
-  // TODO: tenant_invoices is not defined yet, wait for Phase 2/3. Just return empty for now.
   return useQuery({
     queryKey: ["invoices", companyId],
     queryFn: async () => {
-      return [] as any[];
+      if (!companyId) return [];
+      const { data, error } = await supabase
+        .from("tenant_invoices" as any)
+        .select("*")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as any[];
     },
     enabled: !!companyId,
   });
 }
+
 
 export function useCommissions() {
   const { access } = useAuth();

@@ -4,6 +4,17 @@ import * as crypto from "node:crypto";
 
 console.log("Paystack Webhook starting...");
 
+/**
+ * MAKAO — Paystack Webhook Handler
+ *
+ * Handles the following events:
+ *  - charge.success           → Activation fee paid; activates company + sends welcome email
+ *  - subscription.create      → Paystack recurring subscription started; set status = 'active'
+ *  - subscription.disable     → Subscription cancelled; set status = 'canceled'
+ *  - invoice.payment_failed   → Renewal payment failed; set status = 'past_due'
+ *  - invoice.update (paid)    → Renewal paid; extend current_period_end by 30 days
+ */
+
 export default {
   async fetch(req: Request) {
     if (req.method !== 'POST') {
@@ -49,36 +60,27 @@ export default {
       }
 
       const event = JSON.parse(text);
+      const eventType: string = event.event;
 
-      if (event.event === 'charge.success') {
-        // Find company ID from metadata
+      console.log(`Processing Paystack event: ${eventType}`);
+
+      // ── A. Activation fee paid ───────────────────────────────────────────
+      if (eventType === 'charge.success') {
         const customFields = event.data?.metadata?.custom_fields || [];
         const companyIdField = customFields.find((f: any) => f.variable_name === 'company_id');
         
-        if (companyIdField && companyIdField.value) {
+        if (companyIdField?.value) {
           const companyId = companyIdField.value;
           console.log(`Activating company: ${companyId}`);
 
-          // Update company activation status
-          const { error: updateError } = await supabase
+          await supabase
             .from('companies')
             .update({ activation_status: 'active' })
             .eq('id', companyId);
-            
-          if (updateError) {
-            console.error('Failed to update company activation status:', updateError);
-          }
           
-          // Generate licence
-          const { error: rpcError } = await supabase.rpc('generate_licence', {
-            _company_id: companyId
-          });
+          await supabase.rpc('generate_licence', { _company_id: companyId });
           
-          if (rpcError) {
-            console.error('Failed to generate licence:', rpcError);
-          }
-          
-          // Initialize subscription (30 day trial)
+          // Initialize 30-day trial subscription (only if not yet created)
           const trialEnd = new Date();
           trialEnd.setDate(trialEnd.getDate() + 30);
           
@@ -88,28 +90,184 @@ export default {
               company_id: companyId,
               status: 'trialing',
               trial_ends_at: trialEnd.toISOString(),
-              current_period_end: trialEnd.toISOString()
+              current_period_start: new Date().toISOString(),
+              current_period_end: trialEnd.toISOString(),
             });
             
-          if (subError && subError.code !== '23505') { // Ignore unique constraint violation
+          if (subError && subError.code !== '23505') {
             console.error('Failed to initialize subscription:', subError);
           }
           
-          // Send activation email
+          // Send welcome email
           try {
-            // We need the user's email. We can get it from the event metadata or query the profiles table.
             const email = event.data?.customer?.email || event.data?.metadata?.email;
             if (email) {
               await supabase.functions.invoke('send_email', {
                 body: {
                   to: email,
-                  subject: 'Account Activated - Welcome to Makao!',
-                  htmlContent: '<h1>Welcome to Makao!</h1><p>Your account has been successfully activated. You can now start adding properties and units to your dashboard.</p>'
+                  subject: '🎉 Account Activated – Welcome to MAKAO!',
+                  htmlContent: `
+                    <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:32px;background:#0f172a;color:#f8fafc;border-radius:16px;">
+                      <h1 style="color:#6366f1;margin-bottom:8px;">Welcome to MAKAO!</h1>
+                      <p style="color:#94a3b8;font-size:16px;line-height:1.6;">
+                        Your account has been <strong style="color:#22c55e;">successfully activated</strong>. 
+                        You now have full access to the MAKAO property management platform.
+                      </p>
+                      <ul style="color:#cbd5e1;line-height:2;">
+                        <li>✅ Add your properties and units</li>
+                        <li>✅ Create tenant leases</li>
+                        <li>✅ Generate KRA-compliant eTIMS invoices</li>
+                        <li>✅ Track maintenance and support tickets</li>
+                      </ul>
+                      <p style="color:#64748b;font-size:12px;margin-top:32px;">
+                        Sent by MAKAO · Powered by Neon Forge Creation · admin@neonforgecreation.co.ke
+                      </p>
+                    </div>
+                  `,
                 }
               });
             }
           } catch (emailError) {
             console.error('Failed to send activation email:', emailError);
+          }
+        }
+      }
+
+      // ── B. Recurring subscription created ──────────────────────────────────
+      else if (eventType === 'subscription.create') {
+        const email = event.data?.customer?.email;
+        const paystackSubscriptionCode = event.data?.subscription_code;
+        
+        if (email) {
+          // Find company by owner email
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('company_id')
+            .eq('email', email)
+            .maybeSingle();
+          
+          if (profile?.company_id) {
+            const nextBillingDate = event.data?.next_payment_date
+              ? new Date(event.data.next_payment_date)
+              : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+            await supabase
+              .from('platform_subscriptions')
+              .update({
+                status: 'active',
+                current_period_start: new Date().toISOString(),
+                current_period_end: nextBillingDate.toISOString(),
+                // Store Paystack subscription code for future management
+                ...(paystackSubscriptionCode ? { paystack_subscription_code: paystackSubscriptionCode } : {}),
+              })
+              .eq('company_id', profile.company_id);
+            
+            console.log(`Subscription activated for company: ${profile.company_id}`);
+          }
+        }
+      }
+
+      // ── C. Subscription cancelled ───────────────────────────────────────────
+      else if (eventType === 'subscription.disable') {
+        const email = event.data?.customer?.email;
+        
+        if (email) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('company_id')
+            .eq('email', email)
+            .maybeSingle();
+          
+          if (profile?.company_id) {
+            await supabase
+              .from('platform_subscriptions')
+              .update({ status: 'canceled' })
+              .eq('company_id', profile.company_id);
+            
+            console.log(`Subscription canceled for company: ${profile.company_id}`);
+          }
+        }
+      }
+
+      // ── D. Invoice payment failed (renewal failed) ──────────────────────────
+      else if (eventType === 'invoice.payment_failed') {
+        const email = event.data?.customer?.email;
+        
+        if (email) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('company_id')
+            .eq('email', email)
+            .maybeSingle();
+          
+          if (profile?.company_id) {
+            await supabase
+              .from('platform_subscriptions')
+              .update({ status: 'past_due' })
+              .eq('company_id', profile.company_id);
+            
+            // Notify company owner of failed payment
+            try {
+              await supabase.functions.invoke('send_email', {
+                body: {
+                  to: email,
+                  subject: '⚠️ Payment Failed – MAKAO Subscription',
+                  htmlContent: `
+                    <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:32px;background:#0f172a;color:#f8fafc;border-radius:16px;">
+                      <h1 style="color:#ef4444;">Payment Failed</h1>
+                      <p style="color:#94a3b8;">Your MAKAO subscription renewal payment failed. 
+                      Your account has been marked as <strong style="color:#f59e0b;">Past Due</strong>.</p>
+                      <p style="color:#94a3b8;">Please update your payment method or contact support to avoid losing access.</p>
+                      <p style="color:#64748b;font-size:12px;margin-top:32px;">
+                        MAKAO · admin@neonforgecreation.co.ke
+                      </p>
+                    </div>
+                  `,
+                }
+              });
+            } catch (e) {
+              console.error('Failed to send payment failure email:', e);
+            }
+          }
+        }
+      }
+
+      // ── E. Invoice paid (successful renewal) ────────────────────────────────
+      else if (eventType === 'invoice.update' && event.data?.paid === true) {
+        const email = event.data?.customer?.email;
+        
+        if (email) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('company_id')
+            .eq('email', email)
+            .maybeSingle();
+          
+          if (profile?.company_id) {
+            // Extend period by 30 days from now (or from current end if still future)
+            const { data: existingSub } = await supabase
+              .from('platform_subscriptions')
+              .select('current_period_end')
+              .eq('company_id', profile.company_id)
+              .maybeSingle();
+            
+            const currentEnd = existingSub?.current_period_end
+              ? new Date(existingSub.current_period_end)
+              : new Date();
+            const baseDate = currentEnd > new Date() ? currentEnd : new Date();
+            const nextEnd = new Date(baseDate);
+            nextEnd.setDate(nextEnd.getDate() + 30);
+
+            await supabase
+              .from('platform_subscriptions')
+              .update({
+                status: 'active',
+                current_period_start: new Date().toISOString(),
+                current_period_end: nextEnd.toISOString(),
+              })
+              .eq('company_id', profile.company_id);
+            
+            console.log(`Subscription renewed for company: ${profile.company_id}`);
           }
         }
       }

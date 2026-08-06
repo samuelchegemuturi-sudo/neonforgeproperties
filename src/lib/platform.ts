@@ -8,6 +8,19 @@ export const COMPANY_TYPES = [
   { value: "corporate_housing", label: "Corporate Housing" },
 ] as const;
 
+export const AVAILABLE_MODULES = [
+  { value: "properties", label: "Properties" },
+  { value: "tenants", label: "Tenants" },
+  { value: "accounting", label: "Accounting" },
+  { value: "maintenance", label: "Maintenance" },
+  { value: "sales", label: "Sales" },
+  { value: "airbnb", label: "Airbnb" },
+  { value: "crm", label: "CRM" },
+  { value: "construction", label: "Construction" },
+  { value: "members", label: "Members" },
+  { value: "documents", label: "Documents" },
+] as const;
+
 export const AGENCY_TYPES = ["property_management_agency", "real_estate_company"];
 
 export function companyTypeLabel(value: string | null | undefined) {

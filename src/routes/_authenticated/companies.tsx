@@ -6,12 +6,13 @@ import { toast } from "sonner";
 import { CheckCircle2, FileKey, ShieldAlert, XCircle, Search, Download, Users, KeyRound, Building2, Server, Trash2, Copy, Plus, ShieldCheck, Ban } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { adminCreateCompany, adminResetTemporaryPassword, adminDeleteCompany, sendEmailFn } from "@/lib/platform.functions";
-import { COMPANY_TYPES, companyTypeLabel, shortDate, statusTone, titleCase } from "@/lib/platform";
+import { adminCreateCompany, adminResetTemporaryPassword, adminDeleteCompany, sendEmailFn, adminForceActivateCompanyFn } from "@/lib/platform.functions";
+import { COMPANY_TYPES, companyTypeLabel, shortDate, statusTone, titleCase, AVAILABLE_MODULES } from "@/lib/platform";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -61,6 +62,7 @@ type CompanyRow = {
   verification_status: string;
   currency: string;
   created_at: string;
+  enabled_modules: string[];
 };
 
 function CompaniesPage() {
@@ -74,6 +76,7 @@ function CompaniesPage() {
   const [credentials, setCredentials] = useState<{ email: string; temporaryPassword: string } | null>(
     null,
   );
+  const [managingModulesFor, setManagingModulesFor] = useState<CompanyRow | null>(null);
 
   const { data: companies, isLoading } = useQuery({
     queryKey: ["companies"],
@@ -81,7 +84,7 @@ function CompaniesPage() {
       const { data, error } = await supabase
         .from("companies")
         .select(
-          "id, name, email, phone, company_type, status, activation_status, verification_status, currency, created_at",
+          "id, name, email, phone, company_type, status, activation_status, verification_status, currency, created_at, enabled_modules",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -108,14 +111,53 @@ function CompaniesPage() {
         const emailRes = await sendEmail({
           data: {
             to: result.email,
-            subject: 'Welcome to Neon Forge Properties - Company Admin Account',
-            htmlContent: `
-              <h1>Welcome to Neon Forge Properties!</h1>
-              <p>Hello ${variables.owner_name},</p>
-              <p>Your company <strong>${variables.name}</strong> has been registered. You can log in as the owner using this email address and the following temporary password:</p>
-              <p><strong>${result.temporaryPassword}</strong></p>
-              <p>Please log in and change your password immediately.</p>
-            `
+            subject: 'Welcome to MAKAO by Neon Forge — Your Account is Ready',
+            htmlContent: `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Welcome to MAKAO</title></head>
+<body style="margin:0;padding:0;background:#0f0f0f;font-family:'Segoe UI',Arial,sans-serif;color:#e8e8e8">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f">
+    <tr><td align="center" style="padding:40px 16px">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#1a1a2e;border-radius:16px;border:1px solid #2d2d5f;overflow:hidden">
+        <tr><td style="background:linear-gradient(135deg,#6c63ff,#3b82f6);padding:32px 40px;text-align:center">
+          <h1 style="margin:0;font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px">🏠 MAKAO</h1>
+          <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.8)">Property Management Platform</p>
+        </td></tr>
+        <tr><td style="padding:40px">
+          <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#fff">Welcome, ${variables.owner_name || variables.name}!</h2>
+          <p style="margin:0 0 24px;color:#9ca3af;font-size:15px">Your company <strong style="color:#6c63ff">${variables.name}</strong> has been registered on the MAKAO platform.</p>
+          
+          <div style="background:#0f0f1a;border-radius:12px;border:1px solid #2d2d5f;padding:24px;margin-bottom:24px">
+            <p style="margin:0 0 12px;font-size:13px;font-weight:600;color:#6c63ff;letter-spacing:0.5px;text-transform:uppercase">Your Login Credentials</p>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding:6px 0"><span style="color:#9ca3af;font-size:13px">Email</span></td><td style="text-align:right"><code style="background:#1e1e3f;color:#a78bfa;padding:4px 10px;border-radius:6px;font-size:13px">${result.email}</code></td></tr>
+              <tr><td style="padding:6px 0"><span style="color:#9ca3af;font-size:13px">Temp Password</span></td><td style="text-align:right"><code style="background:#1e1e3f;color:#34d399;padding:4px 10px;border-radius:6px;font-size:13px">${result.temporaryPassword}</code></td></tr>
+            </table>
+          </div>
+
+          <div style="background:#1a2e1a;border-radius:12px;border:1px solid #16a34a33;padding:20px;margin-bottom:24px">
+            <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#4ade80">🚀 Next Steps</p>
+            <ol style="margin:0;padding-left:18px;color:#9ca3af;font-size:14px;line-height:2">
+              <li>Log in and change your password immediately</li>
+              <li>Complete your company KYC details</li>
+              <li>Pay the KES 20 activation fee to start your 30-day trial</li>
+              <li>Add your first property and units</li>
+            </ol>
+          </div>
+
+          <div style="text-align:center">
+            <a href="${window?.location?.origin ?? 'https://app.neonforgeproperties.com'}/auth" style="display:inline-block;background:linear-gradient(135deg,#6c63ff,#3b82f6);color:#fff;text-decoration:none;padding:14px 32px;border-radius:50px;font-weight:700;font-size:15px">Log In to MAKAO →</a>
+          </div>
+        </td></tr>
+        <tr><td style="background:#0f0f1a;padding:20px 40px;text-align:center;border-top:1px solid #2d2d5f">
+          <p style="margin:0;font-size:12px;color:#4b5563">This email was sent by Neon Forge Properties · admin@neonforgecreation.co.ke</p>
+          <p style="margin:4px 0 0;font-size:12px;color:#4b5563">⚠️ Do not share your temporary password with anyone.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
           }
         });
         if (emailRes.success) {
@@ -200,6 +242,16 @@ function CompaniesPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["companies"] });
       toast.success("Company and KYC data deleted");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const forceActivateFn = useServerFn(adminForceActivateCompanyFn);
+  const forceActivate = useMutation({
+    mutationFn: (companyId: string) => forceActivateFn({ data: { company_id: companyId } }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["companies"] });
+      toast.success("Company force-activated (30-day trial started)");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -471,14 +523,30 @@ function CompaniesPage() {
                             </Button>
                           )}
                           {can("licence.generate") && c.activation_status !== "active" && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              title="Generate licence & activate"
-                              onClick={() => generateLicence.mutate(c.id)}
-                            >
-                              <KeyRound className="size-4" />
-                            </Button>
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="Generate licence"
+                                onClick={() => generateLicence.mutate(c.id)}
+                              >
+                                <KeyRound className="size-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="Force Activate (Super Admin — no payment)"
+                                className="text-emerald-500 hover:bg-emerald-500/10"
+                                onClick={() => {
+                                  if (confirm(`Force-activate "${c.name}" without Paystack payment? This will start a 30-day trial.`)) {
+                                    forceActivate.mutate(c.id);
+                                  }
+                                }}
+                                disabled={forceActivate.isPending}
+                              >
+                                <ShieldCheck className="size-4" />
+                              </Button>
+                            </>
                           )}
                           {can("companies.suspend") && (
                             <Button
@@ -518,6 +586,16 @@ function CompaniesPage() {
                               <KeyRound className="size-4 text-blue-500" />
                             </Button>
                           )}
+                          {can("companies.edit") && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              title="Manage Modules"
+                              onClick={() => setManagingModulesFor(c)}
+                            >
+                              <Server className="size-4" />
+                            </Button>
+                          )}
                           {can("companies.delete") && (
                             <Button
                               size="sm"
@@ -544,6 +622,53 @@ function CompaniesPage() {
           )}
         </CardContent>
       </Card>
+      <Dialog open={!!managingModulesFor} onOpenChange={(o) => !o && setManagingModulesFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Modules</DialogTitle>
+            <DialogDescription>
+              Enable or disable platform modules for <strong>{managingModulesFor?.name}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            {AVAILABLE_MODULES.map((m) => (
+              <div key={m.value} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`mod-${m.value}`}
+                  checked={(managingModulesFor?.enabled_modules ?? []).includes(m.value)}
+                  disabled={updateCompany.isPending}
+                  onCheckedChange={(checked) => {
+                    if (!managingModulesFor) return;
+                    const current = new Set(managingModulesFor.enabled_modules || []);
+                    if (checked) current.add(m.value);
+                    else current.delete(m.value);
+                    
+                    updateCompany.mutate({
+                      id: managingModulesFor.id,
+                      patch: { enabled_modules: Array.from(current) },
+                    });
+                    
+                    // Optimistic UI update
+                    setManagingModulesFor({
+                      ...managingModulesFor,
+                      enabled_modules: Array.from(current)
+                    });
+                  }}
+                />
+                <label
+                  htmlFor={`mod-${m.value}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {m.label}
+                </label>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setManagingModulesFor(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -14,6 +14,7 @@ export default defineConfig({
   },
   nitro: {
     preset: "vercel",
+    // @ts-ignore
     externals: {
       traceInclude: ["node_modules/tslib/**"],
       inline: [/^@supabase/],

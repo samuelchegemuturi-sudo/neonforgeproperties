@@ -142,10 +142,9 @@ function Onboarding() {
   });
 
   const activate = useMutation({
-    mutationFn: async (reference?: string) => {
-      // In a real app, you would verify the reference on the server here.
+    mutationFn: async (reference: string) => {
       if (data?.company?.activation_status === "pending_activation") {
-        await activateTrialSubscriptionFn({ data: { company_id: companyId! } });
+        await activateTrialSubscriptionFn({ data: { company_id: companyId!, paystack_reference: reference } });
         return "Trial Activated";
       } else {
         await renewSubscriptionFn({ data: { company_id: companyId! } });

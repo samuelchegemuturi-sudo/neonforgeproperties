@@ -79,15 +79,35 @@ export const adminCreateCompany = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: company, error: companyError } = await supabaseAdmin
-      .from("companies")
-      .insert({
-        name: data.name.trim(),
-        email: data.email.trim(),
-        phone: data.phone ?? null,
-        company_type: data.company_type,
-        activation_status: "pending_activation",
-      })
+      let defaultModules = ["properties", "tenants", "accounting"];
+      switch (data.company_type) {
+        case "individual_landlord":
+          defaultModules = ["properties", "tenants", "maintenance"];
+          break;
+        case "property_management_agency":
+          defaultModules = ["properties", "tenants", "maintenance", "accounting", "sales", "crm", "airbnb"];
+          break;
+        case "developer":
+          defaultModules = ["properties", "construction", "sales", "accounting"];
+          break;
+        case "sacco":
+          defaultModules = ["properties", "sales", "members", "accounting"];
+          break;
+        case "bnb_host":
+          defaultModules = ["properties", "airbnb", "maintenance", "accounting"];
+          break;
+      }
+
+      const { data: company, error: companyError } = await supabaseAdmin
+        .from("companies")
+        .insert({
+          name: data.name.trim(),
+          email: data.email.trim(),
+          phone: data.phone ?? null,
+          company_type: data.company_type,
+          activation_status: "pending_activation",
+          enabled_modules: defaultModules,
+        })
       .select("id, name")
       .single();
     if (companyError) throw new Error(companyError.message);
@@ -610,14 +630,35 @@ export const registerCompanyFn = createServerFn({ method: "POST" })
       throw new Error("You are already associated with a company");
     }
 
+    let defaultModules = ["properties", "tenants", "accounting"];
+    const ct = data.company_type || "property_management_agency";
+    switch (ct) {
+      case "individual_landlord":
+        defaultModules = ["properties", "tenants", "maintenance"];
+        break;
+      case "property_management_agency":
+        defaultModules = ["properties", "tenants", "maintenance", "accounting", "sales", "crm", "airbnb"];
+        break;
+      case "developer":
+        defaultModules = ["properties", "construction", "sales", "accounting"];
+        break;
+      case "sacco":
+        defaultModules = ["properties", "sales", "members", "accounting"];
+        break;
+      case "bnb_host":
+        defaultModules = ["properties", "airbnb", "maintenance", "accounting"];
+        break;
+    }
+
     const { data: company, error: companyError } = await supabaseAdmin
       .from("companies")
       .insert({
         name: data.company_name.trim(),
         email: profile?.email || "",
         phone: data.phone ?? null,
-        company_type: data.company_type || "Property Management",
+        company_type: ct,
         activation_status: "pending_activation",
+        enabled_modules: defaultModules,
       })
       .select("id, name")
       .single();
@@ -656,22 +697,75 @@ export const registerCompanyFn = createServerFn({ method: "POST" })
 
 export const activateTrialSubscriptionFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: { company_id: string }) => input)
+  .validator((input: { company_id: string; paystack_reference: string }) => {
+    if (!input.paystack_reference?.trim()) throw new Error("A verified Paystack payment reference is required to activate.");
+    return input;
+  })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Verify user belongs to company and has permission
+    // Verify user belongs to company
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("id")
       .eq("user_id", userId)
       .eq("company_id", data.company_id)
       .limit(1);
-    
-    if (!roleData || roleData.length === 0) {
-      throw new Error("Forbidden - Not a member of this company");
-    }
+    if (!roleData || roleData.length === 0) throw new Error("Forbidden - Not a member of this company");
+
+    // Check if subscription already exists
+    const { data: existingSub } = await supabaseAdmin
+      .from("platform_subscriptions" as any)
+      .select("id")
+      .eq("company_id", data.company_id)
+      .limit(1);
+    if (existingSub && existingSub.length > 0) throw new Error("Company already has a subscription");
+
+    const next30 = new Date();
+    next30.setDate(next30.getDate() + 30);
+
+    const { error: companyError } = await supabaseAdmin
+      .from("companies")
+      .update({ activation_status: "active" })
+      .eq("id", data.company_id);
+    if (companyError) throw new Error(companyError.message);
+
+    const { error: subError } = await supabaseAdmin
+      .from("platform_subscriptions" as any)
+      .insert({
+        company_id: data.company_id,
+        status: "trialing",
+        billing_cycle: "monthly",
+        paystack_reference: data.paystack_reference,
+        current_period_start: new Date().toISOString(),
+        current_period_end: next30.toISOString(),
+      } as any);
+    if (subError) throw new Error(subError.message);
+
+    await supabaseAdmin.from("audit_logs").insert({
+      company_id: data.company_id,
+      actor_id: userId,
+      action: "company.activated_via_paystack",
+      entity: "companies",
+      entity_id: data.company_id,
+      metadata: { paystack_reference: data.paystack_reference },
+    });
+
+    return { success: true };
+  });
+
+/** Super Admin: Force-activate a company without requiring payment (manual override). */
+export const adminForceActivateCompanyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: { company_id: string }) => {
+    if (!input.company_id) throw new Error("company_id is required");
+    return input;
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertSuperAdmin(supabase as never, userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Check if subscription already exists
     const { data: existingSub } = await supabaseAdmin
@@ -680,33 +774,34 @@ export const activateTrialSubscriptionFn = createServerFn({ method: "POST" })
       .eq("company_id", data.company_id)
       .limit(1);
 
-    if (existingSub && existingSub.length > 0) {
-      throw new Error("Company already has a subscription");
-    }
-
     const next30 = new Date();
     next30.setDate(next30.getDate() + 30);
 
-    // Update company activation status
     const { error: companyError } = await supabaseAdmin
       .from("companies")
-      .update({ activation_status: "active" })
+      .update({ activation_status: "active", status: "active" })
       .eq("id", data.company_id);
-    
     if (companyError) throw new Error(companyError.message);
 
-    // Insert trial
-    const { error: subError } = await supabaseAdmin
-      .from("platform_subscriptions" as any)
-      .insert({
+    if (!existingSub || existingSub.length === 0) {
+      await supabaseAdmin.from("platform_subscriptions" as any).insert({
         company_id: data.company_id,
         status: "trialing",
         billing_cycle: "monthly",
+        paystack_reference: "admin_manual_override",
         current_period_start: new Date().toISOString(),
         current_period_end: next30.toISOString(),
       } as any);
+    }
 
-    if (subError) throw new Error(subError.message);
+    await supabaseAdmin.from("audit_logs").insert({
+      company_id: data.company_id,
+      actor_id: userId,
+      action: "company.force_activated_by_admin",
+      entity: "companies",
+      entity_id: data.company_id,
+      metadata: { note: "Manual activation by Super Admin — no Paystack payment" },
+    });
 
     return { success: true };
   });

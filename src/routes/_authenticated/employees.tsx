@@ -60,8 +60,12 @@ type EmployeeRow = {
 
 function EmployeesPage() {
   const { access, can } = useAuth();
-  const companyId = access?.profile?.company_id ?? null;
-  const isSuper = access?.profile?.is_super_admin;
+  // Use access.company.id — this is the ACTIVE company (respects impersonation by Super Admin)
+  // access.profile.company_id is always null for Super Admin, so we MUST use access.company.id
+  const companyId = access?.company?.id ?? null;
+  const isSuper = access?.profile?.is_super_admin ?? false;
+  const isImpersonating = isSuper && !!companyId; // Super Admin viewing a specific company
+  const isPlatformAdmin = isSuper && !companyId;  // Super Admin on their own platform view
   const queryClient = useQueryClient();
   const editable = can('employees.create') || isSuper;
   
@@ -70,20 +74,39 @@ function EmployeesPage() {
   const [open, setOpen] = useState(false);
   const [credentials, setCredentials] = useState<{ email: string; temporaryPassword: string } | null>(null);
 
+  // Owner positions — these are company founders/owners, NOT employees
+  const OWNER_POSITIONS = new Set([
+    'Landlord', 'Host', 'Agency Admin', 'Agency Owner',
+    'Developer', 'SACCO Admin', 'Broker', 'BnB Host',
+    'Owner', 'Director', 'Principal',
+  ]);
+
   const { data: roles } = useQuery({
     queryKey: ['roles', companyId, isSuper],
     enabled: queryEnabled,
     queryFn: async () => {
-      let query = supabase.from('roles').select('id, name, slug').order('name');
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      } else {
-        query = query.is('company_id', null).in('slug', ['platform_verification_officer', 'platform_support_officer']);
+      if (isPlatformAdmin) {
+        // Super Admin not impersonating → show platform staff roles only
+        const { data, error } = await supabase
+          .from('roles')
+          .select('id, name, slug')
+          .is('company_id', null)
+          .order('name');
+        if (error) throw error;
+        return data;
+      } else if (companyId) {
+        // Company context (own or impersonated) → show company roles,
+        // but EXCLUDE owner-type roles that shouldn't be assigned to employees
+        const { data, error } = await supabase
+          .from('roles')
+          .select('id, name, slug')
+          .eq('company_id', companyId)
+          .not('slug', 'in', '(landlord,client_landlord,verification_officer)')
+          .order('name');
+        if (error) throw error;
+        return data;
       }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
+      return [];
     },
   });
 
@@ -91,35 +114,61 @@ function EmployeesPage() {
     queryKey: ['employees', companyId, isSuper],
     enabled: queryEnabled,
     queryFn: async () => {
-      let profilesQuery = supabase.from('profiles').select('id, full_name, email, position, status, is_super_admin').order('full_name');
-      if (companyId) {
-        profilesQuery = profilesQuery.eq('company_id', companyId);
-      } else {
-        profilesQuery = profilesQuery.is('company_id', null);
+      if (isPlatformAdmin) {
+        // Super Admin own view → show ONLY platform staff (null company_id)
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, position, status, is_super_admin')
+          .is('company_id', null)
+          .eq('is_super_admin', false) // exclude other super admins from list
+          .order('full_name');
+        if (error) throw error;
+
+        const { data: userRoles } = await supabase
+          .from('user_roles')
+          .select('user_id, role_id, roles(name)')
+          .is('company_id', null);
+
+        const rolesMap = new Map((userRoles ?? []).map((ur) => [ur.user_id, (ur.roles as any)?.name]));
+        return (profiles ?? []).map((p) => ({ ...p, role_name: rolesMap.get(p.id) || 'No Role' })) as EmployeeRow[];
       }
 
-      const { data: profiles, error } = await profilesQuery;
-      if (error) throw error;
-
-      // Fetch their roles
-      let rolesQuery = supabase.from('user_roles').select('user_id, role_id, roles(name)');
       if (companyId) {
-        rolesQuery = rolesQuery.eq('company_id', companyId);
-      } else {
-        rolesQuery = rolesQuery.is('company_id', null);
+        // Company view (own or impersonated) → show staff only, EXCLUDE owners
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, position, status, is_super_admin')
+          .eq('company_id', companyId)
+          .eq('is_super_admin', false)
+          .order('full_name');
+        if (error) throw error;
+
+        const { data: userRoles } = await supabase
+          .from('user_roles')
+          .select('user_id, role_id, roles(name, slug)')
+          .eq('company_id', companyId);
+
+        const rolesMap = new Map((userRoles ?? []).map((ur) => [ur.user_id, {
+          name: (ur.roles as any)?.name,
+          slug: (ur.roles as any)?.slug,
+        }]));
+
+        return (profiles ?? [])
+          .filter((p) => {
+            // Exclude company owners by position name
+            if (OWNER_POSITIONS.has(p.position ?? '')) return false;
+            // Exclude by owner role slug (catches renamed positions)
+            const roleSlug = rolesMap.get(p.id)?.slug ?? '';
+            if (['landlord', 'client_landlord'].includes(roleSlug)) return false;
+            return true;
+          })
+          .map((p) => ({
+            ...p,
+            role_name: rolesMap.get(p.id)?.name || 'No Role',
+          })) as EmployeeRow[];
       }
-      
-      const { data: userRoles, error: rolesError } = await rolesQuery;
-      if (rolesError) throw rolesError;
 
-      const rolesMap = new Map(userRoles.map((ur) => [ur.user_id, (ur.roles as any)?.name]));
-
-      return profiles
-        .filter(p => p.position !== 'Landlord' && p.position !== 'Tenant' && p.is_super_admin !== true)
-        .map((p) => ({
-          ...p,
-          role_name: rolesMap.get(p.id) || 'No Role',
-        })) as EmployeeRow[];
+      return [];
     },
   });
 
@@ -221,12 +270,21 @@ function EmployeesPage() {
     );
   }
 
+  // Labels based on context
+  const pageTitle = isPlatformAdmin ? "Platform Staff" : "Employees";
+  const pageDesc = isPlatformAdmin
+    ? "MAKAO platform staff — Verification Officers, Support Officers, and internal team."
+    : "Manage your company's team members and assign roles.";
+  const dialogDesc = isPlatformAdmin
+    ? "Create a new platform staff account (Verification Officer, Support, etc)."
+    : "Create a new employee account. They will receive a temporary password.";
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Employees</h1>
-          <p className="text-sm text-muted-foreground">Manage your team members and assign roles.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
+          <p className="text-sm text-muted-foreground">{pageDesc}</p>
         </div>
         
         {editable && (
@@ -239,10 +297,8 @@ function EmployeesPage() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add Employee</DialogTitle>
-                <DialogDescription>
-                  Create a new employee account. They will be assigned a temporary password.
-                </DialogDescription>
+                <DialogTitle>Add {isPlatformAdmin ? 'Platform Staff' : 'Employee'}</DialogTitle>
+                <DialogDescription>{dialogDesc}</DialogDescription>
               </DialogHeader>
               <form
                 onSubmit={(e) => {

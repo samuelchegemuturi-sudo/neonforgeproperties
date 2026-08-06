@@ -29,6 +29,7 @@ export type Company = {
   created_at: string;
   company_type?: string;
   logo_url?: string | null;
+  enabled_modules?: string[];
 };
 
 export type AccessProfile = {
@@ -72,7 +73,7 @@ async function loadAccess(userId: string, impersonatedCompanyId: string | null):
   if (targetCompanyId) {
     const { data } = await supabase
       .from("companies")
-      .select("id, name, currency, country, status, activation_status, verification_status, is_demo, created_at, logo_url, company_type")
+      .select("id, name, currency, country, status, activation_status, verification_status, is_demo, created_at, logo_url, company_type, enabled_modules")
       .eq("id", targetCompanyId)
       .maybeSingle();
     company = data as Company | null;

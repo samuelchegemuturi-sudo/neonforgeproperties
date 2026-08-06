@@ -27,27 +27,14 @@ export function AppSidebar() {
 
   const isSuper = access?.profile?.is_super_admin ?? false;
   
-  const { data: featureFlags } = useQuery({
-    queryKey: ["feature-flags"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("platform_settings")
-        .select("key, value")
-        .like("key", "feature_%");
-      return (data ?? []).reduce<Record<string, string>>((acc, row) => {
-        acc[row.key] = String(row.value);
-        return acc;
-      }, {});
-    },
-    staleTime: 60_000 * 5, // 5 minutes
-  });
+  const enabledModules = access?.company?.enabled_modules ?? [];
 
   const visible = NAV_ITEMS.filter((item) => {
     if (item.soon && !isSuper) return false;
     
-    // Check feature flags
-    if (item.featureFlag && !isSuper) {
-      if (featureFlags?.[item.featureFlag] !== "true") return false;
+    // Check feature/module visibility
+    if (item.module && !isSuper) {
+      if (!enabledModules.includes(item.module)) return false;
     }
 
     if (item.superAdminOnly && !isSuper) return false;
@@ -92,7 +79,7 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {items.map((item) => (
-                    <SidebarMenuItem key={item.to}>
+                    <SidebarMenuItem key={`${item.label}--${item.to}`}>
                       {item.soon ? (
                         <SidebarMenuButton
                           className="cursor-not-allowed opacity-55"

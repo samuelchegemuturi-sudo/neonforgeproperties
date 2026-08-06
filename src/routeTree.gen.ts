@@ -14,29 +14,36 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
+import { Route as AuthenticatedAirbnbRouteImport } from './routes/_authenticated/airbnb'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedCommissionsRouteImport } from './routes/_authenticated/commissions'
 import { Route as AuthenticatedCompaniesRouteImport } from './routes/_authenticated/companies'
+import { Route as AuthenticatedConstructionRouteImport } from './routes/_authenticated/construction'
+import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/crm'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDisbursementsRouteImport } from './routes/_authenticated/disbursements'
+import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
 import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated/employees'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
 import { Route as AuthenticatedForcePasswordChangeRouteImport } from './routes/_authenticated/force-password-change'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
+import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedLeasesRouteImport } from './routes/_authenticated/leases'
 import { Route as AuthenticatedLicencesRouteImport } from './routes/_authenticated/licences'
 import { Route as AuthenticatedListingsRouteImport } from './routes/_authenticated/listings'
 import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
 import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
+import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedPropertiesRouteImport } from './routes/_authenticated/properties'
 import { Route as AuthenticatedRefundsRouteImport } from './routes/_authenticated/refunds'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
+import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSubscriptionsRouteImport } from './routes/_authenticated/subscriptions'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
@@ -44,6 +51,7 @@ import { Route as AuthenticatedTenantsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedTransactionsRouteImport } from './routes/_authenticated/transactions'
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
 import { Route as AuthenticatedVerificationRouteImport } from './routes/_authenticated/verification'
+import { Route as AuthenticatedInvoicesInvoiceIdPrintRouteImport } from './routes/_authenticated/invoices_.$invoiceId.print'
 import { Route as AuthenticatedLeasesLeaseIdStatementRouteImport } from './routes/_authenticated/leases_.$leaseId.statement'
 
 const IndexRoute = IndexRouteImport.update({
@@ -68,6 +76,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAirbnbRoute = AuthenticatedAirbnbRouteImport.update({
+  id: '/airbnb',
+  path: '/airbnb',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
@@ -101,6 +114,17 @@ const AuthenticatedCompaniesRoute = AuthenticatedCompaniesRouteImport.update({
   path: '/companies',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConstructionRoute =
+  AuthenticatedConstructionRouteImport.update({
+    id: '/construction',
+    path: '/construction',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -112,6 +136,11 @@ const AuthenticatedDisbursementsRoute =
     path: '/disbursements',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDocumentsRoute = AuthenticatedDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedEmployeesRoute = AuthenticatedEmployeesRouteImport.update({
   id: '/employees',
   path: '/employees',
@@ -134,6 +163,11 @@ const AuthenticatedIntegrationsRoute =
     path: '/integrations',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedInvoicesRoute = AuthenticatedInvoicesRouteImport.update({
+  id: '/invoices',
+  path: '/invoices',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLeasesRoute = AuthenticatedLeasesRouteImport.update({
   id: '/leases',
   path: '/leases',
@@ -158,6 +192,11 @@ const AuthenticatedMaintenanceRoute =
 const AuthenticatedMapRoute = AuthenticatedMapRouteImport.update({
   id: '/map',
   path: '/map',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMembersRoute = AuthenticatedMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
@@ -188,6 +227,11 @@ const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
 const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSalesRoute = AuthenticatedSalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -228,6 +272,12 @@ const AuthenticatedVerificationRoute =
     path: '/verification',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedInvoicesInvoiceIdPrintRoute =
+  AuthenticatedInvoicesInvoiceIdPrintRouteImport.update({
+    id: '/invoices_/$invoiceId/print',
+    path: '/invoices/$invoiceId/print',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedLeasesLeaseIdStatementRoute =
   AuthenticatedLeasesLeaseIdStatementRouteImport.update({
     id: '/leases_/$leaseId/statement',
@@ -240,29 +290,36 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/activity': typeof AuthenticatedActivityRoute
+  '/airbnb': typeof AuthenticatedAirbnbRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/commissions': typeof AuthenticatedCommissionsRoute
   '/companies': typeof AuthenticatedCompaniesRoute
+  '/construction': typeof AuthenticatedConstructionRoute
+  '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/disbursements': typeof AuthenticatedDisbursementsRoute
+  '/documents': typeof AuthenticatedDocumentsRoute
   '/employees': typeof AuthenticatedEmployeesRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/force-password-change': typeof AuthenticatedForcePasswordChangeRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/invoices': typeof AuthenticatedInvoicesRoute
   '/leases': typeof AuthenticatedLeasesRoute
   '/licences': typeof AuthenticatedLicencesRoute
   '/listings': typeof AuthenticatedListingsRoute
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/map': typeof AuthenticatedMapRoute
+  '/members': typeof AuthenticatedMembersRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/properties': typeof AuthenticatedPropertiesRoute
   '/refunds': typeof AuthenticatedRefundsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/roles': typeof AuthenticatedRolesRoute
+  '/sales': typeof AuthenticatedSalesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/subscriptions': typeof AuthenticatedSubscriptionsRoute
   '/support': typeof AuthenticatedSupportRoute
@@ -270,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/transactions': typeof AuthenticatedTransactionsRoute
   '/units': typeof AuthenticatedUnitsRoute
   '/verification': typeof AuthenticatedVerificationRoute
+  '/invoices/$invoiceId/print': typeof AuthenticatedInvoicesInvoiceIdPrintRoute
   '/leases/$leaseId/statement': typeof AuthenticatedLeasesLeaseIdStatementRoute
 }
 export interface FileRoutesByTo {
@@ -277,29 +335,36 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/activity': typeof AuthenticatedActivityRoute
+  '/airbnb': typeof AuthenticatedAirbnbRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/commissions': typeof AuthenticatedCommissionsRoute
   '/companies': typeof AuthenticatedCompaniesRoute
+  '/construction': typeof AuthenticatedConstructionRoute
+  '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/disbursements': typeof AuthenticatedDisbursementsRoute
+  '/documents': typeof AuthenticatedDocumentsRoute
   '/employees': typeof AuthenticatedEmployeesRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/force-password-change': typeof AuthenticatedForcePasswordChangeRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/invoices': typeof AuthenticatedInvoicesRoute
   '/leases': typeof AuthenticatedLeasesRoute
   '/licences': typeof AuthenticatedLicencesRoute
   '/listings': typeof AuthenticatedListingsRoute
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/map': typeof AuthenticatedMapRoute
+  '/members': typeof AuthenticatedMembersRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/properties': typeof AuthenticatedPropertiesRoute
   '/refunds': typeof AuthenticatedRefundsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/roles': typeof AuthenticatedRolesRoute
+  '/sales': typeof AuthenticatedSalesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/subscriptions': typeof AuthenticatedSubscriptionsRoute
   '/support': typeof AuthenticatedSupportRoute
@@ -307,6 +372,7 @@ export interface FileRoutesByTo {
   '/transactions': typeof AuthenticatedTransactionsRoute
   '/units': typeof AuthenticatedUnitsRoute
   '/verification': typeof AuthenticatedVerificationRoute
+  '/invoices/$invoiceId/print': typeof AuthenticatedInvoicesInvoiceIdPrintRoute
   '/leases/$leaseId/statement': typeof AuthenticatedLeasesLeaseIdStatementRoute
 }
 export interface FileRoutesById {
@@ -316,29 +382,36 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
+  '/_authenticated/airbnb': typeof AuthenticatedAirbnbRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/backup': typeof AuthenticatedBackupRoute
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/commissions': typeof AuthenticatedCommissionsRoute
   '/_authenticated/companies': typeof AuthenticatedCompaniesRoute
+  '/_authenticated/construction': typeof AuthenticatedConstructionRoute
+  '/_authenticated/crm': typeof AuthenticatedCrmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/disbursements': typeof AuthenticatedDisbursementsRoute
+  '/_authenticated/documents': typeof AuthenticatedDocumentsRoute
   '/_authenticated/employees': typeof AuthenticatedEmployeesRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/force-password-change': typeof AuthenticatedForcePasswordChangeRoute
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
+  '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/leases': typeof AuthenticatedLeasesRoute
   '/_authenticated/licences': typeof AuthenticatedLicencesRoute
   '/_authenticated/listings': typeof AuthenticatedListingsRoute
   '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
   '/_authenticated/map': typeof AuthenticatedMapRoute
+  '/_authenticated/members': typeof AuthenticatedMembersRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/pricing': typeof AuthenticatedPricingRoute
   '/_authenticated/properties': typeof AuthenticatedPropertiesRoute
   '/_authenticated/refunds': typeof AuthenticatedRefundsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
+  '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/subscriptions': typeof AuthenticatedSubscriptionsRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
@@ -346,6 +419,7 @@ export interface FileRoutesById {
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
   '/_authenticated/verification': typeof AuthenticatedVerificationRoute
+  '/_authenticated/invoices_/$invoiceId/print': typeof AuthenticatedInvoicesInvoiceIdPrintRoute
   '/_authenticated/leases_/$leaseId/statement': typeof AuthenticatedLeasesLeaseIdStatementRoute
 }
 export interface FileRouteTypes {
@@ -355,29 +429,36 @@ export interface FileRouteTypes {
     | '/auth'
     | '/forgot-password'
     | '/activity'
+    | '/airbnb'
     | '/analytics'
     | '/audit'
     | '/backup'
     | '/branches'
     | '/commissions'
     | '/companies'
+    | '/construction'
+    | '/crm'
     | '/dashboard'
     | '/disbursements'
+    | '/documents'
     | '/employees'
     | '/finance'
     | '/force-password-change'
     | '/integrations'
+    | '/invoices'
     | '/leases'
     | '/licences'
     | '/listings'
     | '/maintenance'
     | '/map'
+    | '/members'
     | '/onboarding'
     | '/pricing'
     | '/properties'
     | '/refunds'
     | '/reports'
     | '/roles'
+    | '/sales'
     | '/settings'
     | '/subscriptions'
     | '/support'
@@ -385,6 +466,7 @@ export interface FileRouteTypes {
     | '/transactions'
     | '/units'
     | '/verification'
+    | '/invoices/$invoiceId/print'
     | '/leases/$leaseId/statement'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -392,29 +474,36 @@ export interface FileRouteTypes {
     | '/auth'
     | '/forgot-password'
     | '/activity'
+    | '/airbnb'
     | '/analytics'
     | '/audit'
     | '/backup'
     | '/branches'
     | '/commissions'
     | '/companies'
+    | '/construction'
+    | '/crm'
     | '/dashboard'
     | '/disbursements'
+    | '/documents'
     | '/employees'
     | '/finance'
     | '/force-password-change'
     | '/integrations'
+    | '/invoices'
     | '/leases'
     | '/licences'
     | '/listings'
     | '/maintenance'
     | '/map'
+    | '/members'
     | '/onboarding'
     | '/pricing'
     | '/properties'
     | '/refunds'
     | '/reports'
     | '/roles'
+    | '/sales'
     | '/settings'
     | '/subscriptions'
     | '/support'
@@ -422,6 +511,7 @@ export interface FileRouteTypes {
     | '/transactions'
     | '/units'
     | '/verification'
+    | '/invoices/$invoiceId/print'
     | '/leases/$leaseId/statement'
   id:
     | '__root__'
@@ -430,29 +520,36 @@ export interface FileRouteTypes {
     | '/auth'
     | '/forgot-password'
     | '/_authenticated/activity'
+    | '/_authenticated/airbnb'
     | '/_authenticated/analytics'
     | '/_authenticated/audit'
     | '/_authenticated/backup'
     | '/_authenticated/branches'
     | '/_authenticated/commissions'
     | '/_authenticated/companies'
+    | '/_authenticated/construction'
+    | '/_authenticated/crm'
     | '/_authenticated/dashboard'
     | '/_authenticated/disbursements'
+    | '/_authenticated/documents'
     | '/_authenticated/employees'
     | '/_authenticated/finance'
     | '/_authenticated/force-password-change'
     | '/_authenticated/integrations'
+    | '/_authenticated/invoices'
     | '/_authenticated/leases'
     | '/_authenticated/licences'
     | '/_authenticated/listings'
     | '/_authenticated/maintenance'
     | '/_authenticated/map'
+    | '/_authenticated/members'
     | '/_authenticated/onboarding'
     | '/_authenticated/pricing'
     | '/_authenticated/properties'
     | '/_authenticated/refunds'
     | '/_authenticated/reports'
     | '/_authenticated/roles'
+    | '/_authenticated/sales'
     | '/_authenticated/settings'
     | '/_authenticated/subscriptions'
     | '/_authenticated/support'
@@ -460,6 +557,7 @@ export interface FileRouteTypes {
     | '/_authenticated/transactions'
     | '/_authenticated/units'
     | '/_authenticated/verification'
+    | '/_authenticated/invoices_/$invoiceId/print'
     | '/_authenticated/leases_/$leaseId/statement'
   fileRoutesById: FileRoutesById
 }
@@ -507,6 +605,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedActivityRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/airbnb': {
+      id: '/_authenticated/airbnb'
+      path: '/airbnb'
+      fullPath: '/airbnb'
+      preLoaderRoute: typeof AuthenticatedAirbnbRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/analytics': {
       id: '/_authenticated/analytics'
       path: '/analytics'
@@ -549,6 +654,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCompaniesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/construction': {
+      id: '/_authenticated/construction'
+      path: '/construction'
+      fullPath: '/construction'
+      preLoaderRoute: typeof AuthenticatedConstructionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/crm': {
+      id: '/_authenticated/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof AuthenticatedCrmRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -561,6 +680,13 @@ declare module '@tanstack/react-router' {
       path: '/disbursements'
       fullPath: '/disbursements'
       preLoaderRoute: typeof AuthenticatedDisbursementsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/documents': {
+      id: '/_authenticated/documents'
+      path: '/documents'
+      fullPath: '/documents'
+      preLoaderRoute: typeof AuthenticatedDocumentsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/employees': {
@@ -589,6 +715,13 @@ declare module '@tanstack/react-router' {
       path: '/integrations'
       fullPath: '/integrations'
       preLoaderRoute: typeof AuthenticatedIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/invoices': {
+      id: '/_authenticated/invoices'
+      path: '/invoices'
+      fullPath: '/invoices'
+      preLoaderRoute: typeof AuthenticatedInvoicesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/leases': {
@@ -624,6 +757,13 @@ declare module '@tanstack/react-router' {
       path: '/map'
       fullPath: '/map'
       preLoaderRoute: typeof AuthenticatedMapRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/members': {
+      id: '/_authenticated/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof AuthenticatedMembersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/onboarding': {
@@ -666,6 +806,13 @@ declare module '@tanstack/react-router' {
       path: '/roles'
       fullPath: '/roles'
       preLoaderRoute: typeof AuthenticatedRolesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sales': {
+      id: '/_authenticated/sales'
+      path: '/sales'
+      fullPath: '/sales'
+      preLoaderRoute: typeof AuthenticatedSalesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
@@ -717,6 +864,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVerificationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/invoices_/$invoiceId/print': {
+      id: '/_authenticated/invoices_/$invoiceId/print'
+      path: '/invoices/$invoiceId/print'
+      fullPath: '/invoices/$invoiceId/print'
+      preLoaderRoute: typeof AuthenticatedInvoicesInvoiceIdPrintRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/leases_/$leaseId/statement': {
       id: '/_authenticated/leases_/$leaseId/statement'
       path: '/leases/$leaseId/statement'
@@ -729,29 +883,36 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
+  AuthenticatedAirbnbRoute: typeof AuthenticatedAirbnbRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedBackupRoute: typeof AuthenticatedBackupRoute
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCommissionsRoute: typeof AuthenticatedCommissionsRoute
   AuthenticatedCompaniesRoute: typeof AuthenticatedCompaniesRoute
+  AuthenticatedConstructionRoute: typeof AuthenticatedConstructionRoute
+  AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDisbursementsRoute: typeof AuthenticatedDisbursementsRoute
+  AuthenticatedDocumentsRoute: typeof AuthenticatedDocumentsRoute
   AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedForcePasswordChangeRoute: typeof AuthenticatedForcePasswordChangeRoute
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
+  AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedLeasesRoute: typeof AuthenticatedLeasesRoute
   AuthenticatedLicencesRoute: typeof AuthenticatedLicencesRoute
   AuthenticatedListingsRoute: typeof AuthenticatedListingsRoute
   AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
   AuthenticatedMapRoute: typeof AuthenticatedMapRoute
+  AuthenticatedMembersRoute: typeof AuthenticatedMembersRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
   AuthenticatedPropertiesRoute: typeof AuthenticatedPropertiesRoute
   AuthenticatedRefundsRoute: typeof AuthenticatedRefundsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
+  AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSubscriptionsRoute: typeof AuthenticatedSubscriptionsRoute
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
@@ -759,34 +920,42 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTransactionsRoute: typeof AuthenticatedTransactionsRoute
   AuthenticatedUnitsRoute: typeof AuthenticatedUnitsRoute
   AuthenticatedVerificationRoute: typeof AuthenticatedVerificationRoute
+  AuthenticatedInvoicesInvoiceIdPrintRoute: typeof AuthenticatedInvoicesInvoiceIdPrintRoute
   AuthenticatedLeasesLeaseIdStatementRoute: typeof AuthenticatedLeasesLeaseIdStatementRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedActivityRoute: AuthenticatedActivityRoute,
+  AuthenticatedAirbnbRoute: AuthenticatedAirbnbRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedBackupRoute: AuthenticatedBackupRoute,
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCommissionsRoute: AuthenticatedCommissionsRoute,
   AuthenticatedCompaniesRoute: AuthenticatedCompaniesRoute,
+  AuthenticatedConstructionRoute: AuthenticatedConstructionRoute,
+  AuthenticatedCrmRoute: AuthenticatedCrmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDisbursementsRoute: AuthenticatedDisbursementsRoute,
+  AuthenticatedDocumentsRoute: AuthenticatedDocumentsRoute,
   AuthenticatedEmployeesRoute: AuthenticatedEmployeesRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedForcePasswordChangeRoute: AuthenticatedForcePasswordChangeRoute,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
+  AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedLeasesRoute: AuthenticatedLeasesRoute,
   AuthenticatedLicencesRoute: AuthenticatedLicencesRoute,
   AuthenticatedListingsRoute: AuthenticatedListingsRoute,
   AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
   AuthenticatedMapRoute: AuthenticatedMapRoute,
+  AuthenticatedMembersRoute: AuthenticatedMembersRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedPricingRoute: AuthenticatedPricingRoute,
   AuthenticatedPropertiesRoute: AuthenticatedPropertiesRoute,
   AuthenticatedRefundsRoute: AuthenticatedRefundsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
+  AuthenticatedSalesRoute: AuthenticatedSalesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSubscriptionsRoute: AuthenticatedSubscriptionsRoute,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
@@ -794,6 +963,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTransactionsRoute: AuthenticatedTransactionsRoute,
   AuthenticatedUnitsRoute: AuthenticatedUnitsRoute,
   AuthenticatedVerificationRoute: AuthenticatedVerificationRoute,
+  AuthenticatedInvoicesInvoiceIdPrintRoute:
+    AuthenticatedInvoicesInvoiceIdPrintRoute,
   AuthenticatedLeasesLeaseIdStatementRoute:
     AuthenticatedLeasesLeaseIdStatementRoute,
 }
