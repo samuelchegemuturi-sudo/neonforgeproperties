@@ -85,7 +85,8 @@ export type Database = {
       }
       companies: {
         Row: {
-          activation_status: string
+          enabled_modules: string[]
+activation_status: string
           auto_disbursement: boolean
           company_type: string
           country: string | null
@@ -105,7 +106,8 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
-          activation_status?: string
+                    enabled_modules?: string[]
+activation_status?: string
           auto_disbursement?: boolean
           company_type?: string
           country?: string | null
@@ -125,7 +127,8 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
-          activation_status?: string
+                    enabled_modules?: string[]
+activation_status?: string
           auto_disbursement?: boolean
           company_type?: string
           country?: string | null
@@ -421,7 +424,8 @@ export type Database = {
       }
       properties: {
         Row: {
-          address: string | null
+          branch_id: string | null
+address: string | null
           city: string | null
           company_id: string
           county: string | null
@@ -440,7 +444,8 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
-          address?: string | null
+                    branch_id?: string | null
+address?: string | null
           city?: string | null
           company_id: string
           county?: string | null
@@ -459,7 +464,8 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
-          address?: string | null
+                    branch_id?: string | null
+address?: string | null
           city?: string | null
           company_id?: string
           county?: string | null
@@ -1033,6 +1039,188 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+
+      branches: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branches_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      tenant_invoices: {
+        Row: {
+          id: string
+          company_id: string
+          property_id: string | null
+          unit_id: string | null
+          lease_id: string | null
+          tenant_id: string | null
+          invoice_number: string | null
+          amount: number
+          tax_rate: number
+          tax_amount: number | null
+          description: string
+          notes: string | null
+          due_date: string
+          status: "unpaid" | "partial" | "paid" | "void"
+          buyer_pin: string | null
+          line_items: any[]
+          payment_reference: string | null
+          paid_at: string | null
+          digitax_control_number: string | null
+          digitax_qr_code_url: string | null
+          digitax_invoice_number: string | null
+          digitax_fiscalized_at: string | null
+          digitax_status: "pending" | "submitted" | "fiscalized" | "failed"
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          property_id?: string | null
+          unit_id?: string | null
+          lease_id?: string | null
+          tenant_id?: string | null
+          invoice_number?: string | null
+          amount: number
+          tax_rate?: number
+          tax_amount?: number | null
+          description: string
+          notes?: string | null
+          due_date: string
+          status?: "unpaid" | "partial" | "paid" | "void"
+          buyer_pin?: string | null
+          line_items?: any[]
+          payment_reference?: string | null
+          paid_at?: string | null
+          digitax_control_number?: string | null
+          digitax_qr_code_url?: string | null
+          digitax_invoice_number?: string | null
+          digitax_fiscalized_at?: string | null
+          digitax_status?: "pending" | "submitted" | "fiscalized" | "failed"
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          property_id?: string | null
+          unit_id?: string | null
+          lease_id?: string | null
+          tenant_id?: string | null
+          invoice_number?: string | null
+          amount?: number
+          tax_rate?: number
+          tax_amount?: number | null
+          description?: string
+          notes?: string | null
+          due_date?: string
+          status?: "unpaid" | "partial" | "paid" | "void"
+          buyer_pin?: string | null
+          line_items?: any[]
+          payment_reference?: string | null
+          paid_at?: string | null
+          digitax_control_number?: string | null
+          digitax_qr_code_url?: string | null
+          digitax_invoice_number?: string | null
+          digitax_fiscalized_at?: string | null
+          digitax_status?: "pending" | "submitted" | "fiscalized" | "failed"
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_invoices_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_invoices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_invoices_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          id: string
+          name: string
+          base_price_monthly: number
+          description: string | null
+          limits: any
+          features: any
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          base_price_monthly?: number
+          description?: string | null
+          limits?: any
+          features?: any
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          base_price_monthly?: number
+          description?: string | null
+          limits?: any
+          features?: any
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

@@ -52,10 +52,10 @@ function MembersPage() {
   roles.forEach((ur: any) => {
     if (!roleMap[ur.user_id]) roleMap[ur.user_id] = [];
     const rName = (ur.roles as any)?.name;
-    if (rName) roleMap[ur.user_id].push(rName);
+    if (rName) roleMap[ur.user_id]!.push(rName);
   });
 
-  const filtered = members.filter((m: any) => {
+  const filtered = (members || []).filter((m: any) => {
     if (!search) return true;
     return `${m.full_name ?? ""} ${m.email ?? ""} ${m.position ?? ""}`.toLowerCase().includes(search.toLowerCase());
   });
@@ -81,7 +81,7 @@ function MembersPage() {
             <CardTitle className="text-sm font-medium">Total Members</CardTitle>
             <Users className="size-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent><div className="text-3xl font-bold">{members.length}</div></CardContent>
+          <CardContent><div className="text-3xl font-bold">{(members || []).length}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -90,7 +90,7 @@ function MembersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-500">
-              {members.filter((m: any) => m.status !== "suspended").length}
+              {(members || []).filter((m: any) => m.status !== "suspended").length}
             </div>
           </CardContent>
         </Card>
@@ -101,7 +101,7 @@ function MembersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-red-500">
-              {members.filter((m: any) => m.status === "suspended").length}
+              {(members || []).filter((m: any) => m.status === "suspended").length}
             </div>
           </CardContent>
         </Card>

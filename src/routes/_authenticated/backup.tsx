@@ -37,10 +37,10 @@ async function exportTableAsCSV(tableName: string, companyId: string | null | un
   }
   const { data, error } = await q;
   if (error) throw error;
-  if (!data || data.length === 0) throw new Error("No data to export");
+  if (!data || (data as any[]).length === 0) throw new Error("No data to export");
 
-  const headers = Object.keys(data[0]);
-  const rows = data.map((row: any) =>
+  const headers = Object.keys((data as any[])[0]);
+  const rows = (data as any[]).map((row: any) =>
     headers.map((h) => {
       const val = row[h];
       if (val == null) return "";

@@ -36,10 +36,22 @@ function SubscriptionsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("companies")
-        .select("id, name, company_type, activation_status, auto_disbursement, currency")
+        .select(`
+          id, name, company_type, activation_status, auto_disbursement, currency,
+          platform_subscriptions(plan_id, billing_cycle, discount_percentage)
+        `)
         .order("name");
       if (error) throw error;
-      return data as CompanyRow[];
+      return data as any[];
+    },
+  });
+
+  const { data: plans } = useQuery({
+    queryKey: ["subscription-plans-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("subscription_plans").select("*");
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -66,9 +78,8 @@ function SubscriptionsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Subscriptions</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {isSuper
-            ? "Recalculated every cycle from live unit counts."
-            : "Your monthly platform charge, recalculated from your live unit counts."}{" "}
-          With automatic disbursement on, only occupied units that paid rent are billed.
+            ? "Your customers' SaaS subscriptions based on their selected plans."
+            : "Your organization's active subscription plans and billing details."}
         </p>
       </div>
 
@@ -78,6 +89,9 @@ function SubscriptionsPage() {
         <div className="space-y-4">
           {(companies ?? []).map((c) => {
             const quote = quotes?.[c.id];
+            const sub = c.platform_subscriptions?.[0];
+            const plan = plans?.find((p) => p.id === sub?.plan_id);
+
             return (
               <Card key={c.id}>
                 <CardHeader>
@@ -86,7 +100,7 @@ function SubscriptionsPage() {
                       <CardTitle className="text-base">{c.name}</CardTitle>
                       <CardDescription>
                         {companyTypeLabel(c.company_type)} ·{" "}
-                        {c.auto_disbursement ? "Automatic disbursement on" : "Manual settlement"}
+                        {plan ? `${plan.name} Plan (${sub.billing_cycle})` : "No active plan"}
                       </CardDescription>
                     </div>
                     <div className="text-right">
@@ -94,8 +108,7 @@ function SubscriptionsPage() {
                         {money(quote?.total ?? 0, c.currency)}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {quote?.units ?? 0} billable units ·{" "}
-                        {titleCase(quote?.basis ?? "registered_units")}
+                        {quote?.units ?? 0} {quote?.basis ?? "properties"} registered
                       </p>
                     </div>
                   </div>
@@ -106,7 +119,7 @@ function SubscriptionsPage() {
                   </Badge>
                   {quote?.breakdown?.length ? (
                     <div className="pt-2 text-sm">
-                      {quote.breakdown.map((b) => (
+                      {quote.breakdown.map((b: any) => (
                         <div
                           key={b.slug}
                           className="flex justify-between border-b border-border py-1 last:border-0"
@@ -120,7 +133,7 @@ function SubscriptionsPage() {
                     </div>
                   ) : (
                     <p className="pt-2 text-sm text-muted-foreground">
-                      No billable units this cycle.
+                      No active plan charges.
                     </p>
                   )}
                 </CardContent>

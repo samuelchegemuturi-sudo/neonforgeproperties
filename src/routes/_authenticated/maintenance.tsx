@@ -152,7 +152,7 @@ function MaintenanceComponent() {
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status, cost, reqInfo }: { id: string, status: string, cost?: number, reqInfo?: any }) => {
+    mutationFn: async ({ id, status, cost, reqInfo }: { id: string, status: string, cost?: number | undefined, reqInfo?: any }) => {
       const updateData: any = { status };
       if (cost !== undefined) updateData.cost = cost;
       

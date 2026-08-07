@@ -61,7 +61,7 @@ export function useTenantInvoices() {
         .eq("company_id", companyId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as TenantInvoiceFull[];
+      return (data ?? []) as unknown as TenantInvoiceFull[];
     },
     enabled: !!companyId,
   });
@@ -85,7 +85,7 @@ export function useTenantInvoice(invoiceId: string | undefined) {
         .eq("id", invoiceId)
         .single();
       if (error) throw error;
-      return data as TenantInvoiceFull & { companies?: { name: string; email: string; phone?: string } | null };
+      return data as unknown as TenantInvoiceFull & { companies?: { name: string; email: string; phone?: string } | null };
     },
     enabled: !!invoiceId,
   });
@@ -98,9 +98,9 @@ export type CreateInvoiceInput = {
   tenant_id?: string | null;
   description: string;
   due_date: string;
-  tax_rate?: number;
-  buyer_pin?: string;
-  notes?: string;
+  tax_rate?: number | undefined;
+  buyer_pin?: string | undefined;
+  notes?: string | undefined;
   line_items: InvoiceLineItem[];
 };
 
