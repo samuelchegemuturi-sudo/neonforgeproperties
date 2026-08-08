@@ -47,7 +47,7 @@ async function fixCompanyRolePermissions(companyId: string, supabaseAdmin: any) 
   
   if (!perms || !roles) return;
 
-  let toInsert: any[] = [];
+  const toInsert: any[] = [];
   for (const role of roles) {
     const t = tmpl.find(x => x.slug === role.slug);
     if (!t) continue;

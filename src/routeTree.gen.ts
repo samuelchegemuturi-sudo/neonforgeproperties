@@ -45,6 +45,7 @@ import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedPropertiesRouteImport } from './routes/_authenticated/properties'
 import { Route as AuthenticatedRefundsRouteImport } from './routes/_authenticated/refunds'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedRoadmapRouteImport } from './routes/_authenticated/roadmap'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -242,6 +243,11 @@ const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRoadmapRoute = AuthenticatedRoadmapRouteImport.update({
+  id: '/roadmap',
+  path: '/roadmap',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
@@ -339,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/properties': typeof AuthenticatedPropertiesRoute
   '/refunds': typeof AuthenticatedRefundsRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/roadmap': typeof AuthenticatedRoadmapRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -387,6 +394,7 @@ export interface FileRoutesByTo {
   '/properties': typeof AuthenticatedPropertiesRoute
   '/refunds': typeof AuthenticatedRefundsRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/roadmap': typeof AuthenticatedRoadmapRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -437,6 +445,7 @@ export interface FileRoutesById {
   '/_authenticated/properties': typeof AuthenticatedPropertiesRoute
   '/_authenticated/refunds': typeof AuthenticatedRefundsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/roadmap': typeof AuthenticatedRoadmapRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -487,6 +496,7 @@ export interface FileRouteTypes {
     | '/properties'
     | '/refunds'
     | '/reports'
+    | '/roadmap'
     | '/roles'
     | '/sales'
     | '/settings'
@@ -535,6 +545,7 @@ export interface FileRouteTypes {
     | '/properties'
     | '/refunds'
     | '/reports'
+    | '/roadmap'
     | '/roles'
     | '/sales'
     | '/settings'
@@ -584,6 +595,7 @@ export interface FileRouteTypes {
     | '/_authenticated/properties'
     | '/_authenticated/refunds'
     | '/_authenticated/reports'
+    | '/_authenticated/roadmap'
     | '/_authenticated/roles'
     | '/_authenticated/sales'
     | '/_authenticated/settings'
@@ -860,6 +872,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/roadmap': {
+      id: '/_authenticated/roadmap'
+      path: '/roadmap'
+      fullPath: '/roadmap'
+      preLoaderRoute: typeof AuthenticatedRoadmapRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/roles': {
       id: '/_authenticated/roles'
       path: '/roles'
@@ -971,6 +990,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPropertiesRoute: typeof AuthenticatedPropertiesRoute
   AuthenticatedRefundsRoute: typeof AuthenticatedRefundsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedRoadmapRoute: typeof AuthenticatedRoadmapRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -1015,6 +1035,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPropertiesRoute: AuthenticatedPropertiesRoute,
   AuthenticatedRefundsRoute: AuthenticatedRefundsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedRoadmapRoute: AuthenticatedRoadmapRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
   AuthenticatedSalesRoute: AuthenticatedSalesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
