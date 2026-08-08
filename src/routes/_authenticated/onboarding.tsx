@@ -65,8 +65,8 @@ function Onboarding() {
       const propertiesList = properties.data ?? [];
       const verifiedProperties = propertiesList.filter(p => p.verification_status !== 'pending');
       
-      let isFirstMonth = company.data?.activation_status === "pending_activation";
-      let finalFee = isFirstMonth ? 20 : (verifiedProperties.length || 0) * 500;
+      const isFirstMonth = company.data?.activation_status === "pending_activation";
+      const finalFee = isFirstMonth ? 20 : (verifiedProperties.length || 0) * 500;
 
       return {
         company: company.data,

@@ -14,7 +14,7 @@ export default defineConfig({
   },
   nitro: {
     preset: "vercel",
-    // @ts-ignore
+    // @ts-expect-error Lovable config types omit Nitro externals, but Nitro accepts this option.
     externals: {
       traceInclude: ["node_modules/tslib/**"],
       inline: [/^@supabase/],
